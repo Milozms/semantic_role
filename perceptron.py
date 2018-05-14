@@ -53,7 +53,7 @@ class Perceptron(object):
 		for feat in features:
 			if feat not in self.weights:
 				continue
-			score += self.weights[feat].get(label, default=0.0)
+			score += self.weights[feat][label]
 		return score
 
 	def viterbi_decode(self, instance, verb_idx):
