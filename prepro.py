@@ -56,7 +56,7 @@ def read(textfile, propfile, outfile):
 				if tag[0] == '(':
 					curtag = tag.strip('()*')
 					curtag_split = curtag.split('*')
-					if len(curtag_split) > 1 and curtag_split[0]==curtag_split[1]:
+					if len(curtag_split) > 1 and curtag_split[0] == curtag_split[1]:
 						curtag = curtag_split[0]
 					newtags.append(curtag + '-B')
 				else:
@@ -83,6 +83,7 @@ def read(textfile, propfile, outfile):
 
 	with open(outfile + '.json', 'w') as outf:
 		json.dump(dataset, outf)
+	return dataset
 
 def extract_feature(instance, verb_idx, position):
 	'''
@@ -98,7 +99,7 @@ def extract_feature(instance, verb_idx, position):
 	pb = position + 2  # biased position
 	length = instance['len']
 	tags = instance['tags'][verb_idx]
-	verb, verb_postion = instance['verb'][verb_idx]
+	verb_postion, verb = instance['verbs'][verb_idx]
 	vpb = verb_postion + 2 # biased position
 	features = []
 
@@ -138,12 +139,7 @@ def extract_feature(instance, verb_idx, position):
 	else:
 		features.append('After_Predicate')
 	features.append('Distance=' + str(position - verb_postion))
-	'''
-	Suffix
-	'''
-	features.append('Suf2=' + words[pb][:2])
-	features.append('Suf3=' + words[pb][:3])
-	features.append('Suf4=' + words[pb][:4])
+
 	'''
 	Sentence level features
 	'''
@@ -160,7 +156,6 @@ def extract_feature(instance, verb_idx, position):
 	'''
 	Predicate context word unigram, bigram, trigram
 	'''
-	features.append('PW0=' + words[vpb])
 	features.append('PW-1,0=' + words[vpb - 1] + ',' + words[vpb])
 	features.append('PW0,+1=' + words[vpb] + ',' + words[vpb + 1])
 	features.append('PW-1,0,+1=' + words[vpb - 1] + ',' + words[vpb] + ',' + words[vpb + 1])
@@ -169,7 +164,6 @@ def extract_feature(instance, verb_idx, position):
 	'''
 	Predicate context POS unigram, bigram, trigram
 	'''
-	features.append('PP0=' + pos[vpb])
 	features.append('PP-1,0=' + pos[vpb - 1] + ',' + pos[vpb])
 	features.append('PP0,+1=' + pos[vpb] + ',' + pos[vpb + 1])
 	features.append('PP-1,0,+1=' + pos[vpb - 1] + ',' + pos[vpb] + ',' + pos[vpb + 1])
@@ -179,7 +173,19 @@ def extract_feature(instance, verb_idx, position):
 	return features
 
 
-
+def get_all_classes(dataset):
+	classes = set()
+	for instance in dataset:
+		for tags in instance['tags']:
+			for tag in tags:
+				classes.add(tag)
+	classes = list(classes)
+	classes.sort()
+	with open('./data/classes.json', 'w') as f:
+		json.dump(classes, f)
+	return classes
 
 if __name__ == '__main__':
-	read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
+	classes = get_all_classes(dev + trn)
