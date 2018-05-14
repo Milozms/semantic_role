@@ -1,5 +1,5 @@
 from collections import defaultdict
-from prepro import get_word_features
+from prepro import read, get_word_features, get_tag_features
 import random
 import json
 import numpy as np
@@ -22,15 +22,11 @@ class Perceptron(object):
 		self.n_class = n_class
 		# self.transition = np.zeros(shape=[n_class, n_class, n_class], dtype=np.float32)
 
-	def get_tag_features(self, prev1_tag_id, prev2_tag_id=None):
-		features = []
-		prev1_tag = self.classes[prev1_tag_id]
-		features.append('T-1=' + prev1_tag)
+	def get_tag_features_from_id(self, prev1_tag_id, prev2_tag_id=None):
 		if prev2_tag_id:
-			prev2_tag = self.classes[prev2_tag_id]
-			features.append('T-2=' + prev2_tag)
-			features.append('T-2,-1=' + prev2_tag + ',' + prev1_tag)
-		return features
+			return get_tag_features(self.classes[prev1_tag_id], self.classes[prev2_tag_id])
+		else:
+			return get_tag_features(self.classes[prev1_tag_id])
 
 	def update_weights(self, golden, pred, features):
 		'''
@@ -60,18 +56,6 @@ class Perceptron(object):
 			score += self.weights[feat].get(label, default=0.0)
 		return score
 
-	def train(self, niter, dataset):
-		for iter in range(niter):
-			for instance in dataset:
-				for verb_idx in range(len(instance['verbs'])):
-					for position in range(instance['len']):
-						features = get_word_features(instance, verb_idx, position)
-						pred = self.predict(features)
-						golden = instance['tags'][verb_idx][position]
-						self.update_weights(golden, pred, features)
-			random.shuffle(dataset)
-
-
 	def viterbi_decode(self, instance, verb_idx):
 		'''
 		:param instance:
@@ -84,8 +68,8 @@ class Perceptron(object):
 		'''
 		length = instance['len']
 		n_class = self.n_class
-		lattice = np.zeros(shape=[length][n_class][n_class], dtype=np.float32)
-		back = np.zeros(shape=[length][n_class][n_class], dtype=np.int32)
+		lattice = np.zeros(shape=[length, n_class, n_class], dtype=np.float32)
+		back = np.zeros(shape=[length, n_class, n_class], dtype=np.int32)
 		START = self.label2id['START']  # label id for START symbol = 0
 
 		# Compute scores for first position
@@ -98,7 +82,7 @@ class Perceptron(object):
 		position = 1
 		for label_id in range(1, n_class):
 			for prev1 in range(1, n_class):
-				features = get_word_features(instance, verb_idx, position) + self.get_tag_features(prev1)
+				features = get_word_features(instance, verb_idx, position) + self.get_tag_features_from_id(prev1)
 				lattice[position][prev1][label_id] = \
 					lattice[position - 1][START][prev1] + self.feature_score(features, label_id)
 
@@ -111,7 +95,7 @@ class Perceptron(object):
 					max_score = MINSCORE
 					best_prev2 = None
 					for prev2 in range(1, n_class):  # prev_2 can't be START
-						tag_features = self.get_tag_features(prev1, prev2)
+						tag_features = self.get_tag_features_from_id(prev1, prev2)
 						score = lattice[position - 1][prev2][prev1] + self.feature_score(tag_features, label_id)
 						if score > max_score:
 							max_score = score
@@ -125,9 +109,48 @@ class Perceptron(object):
 		max_score = MINSCORE
 		for last1 in range(1, n_class):
 			for last2 in range(1, n_class):
-				if label_id[length - 1][last2]
+				if lattice[length - 1][last2][last1] > max_score:
+					max_score = lattice[length - 1][last2][last1]
+					best_last1, best_last2 = last1, last2
+
+		decode_sequence = [0] * (length - 2) + [best_last2, best_last1]
 
 		# Back track
-		for position in range(length, 2, -1):
+		for position in range(length - 3, 0, -1):
+			u = decode_sequence[position + 1]
+			v = decode_sequence[position + 2]
+			decode_sequence[position] = back[position + 2][u][v]
+
+		decode_tags = [self.classes[label_id] for label_id in decode_sequence]
+
+		return decode_sequence
+
+	def learn_from_one_instance(self, instance, verb_idx):
+		golden = instance['tags'][verb_idx]
+		pred = self.viterbi_decode(instance, verb_idx)
+		length = instance['len']
+		assert len(golden) == length
+		assert len(pred) == length
+
+		for pos in range(length):
+			if golden[pos] != pred[pos]:
+				features = get_word_features(instance, verb_idx, pos)
+				if pos >= 2:
+					features += get_tag_features(golden[pos - 1], golden[pos - 2])
+				elif pos == 1:
+					features += get_tag_features(golden[pos - 1])
+				self.update_weights(golden[pos], pred[pos], features)
 
 
+	def train(self, niter, dataset):
+		for iter in range(niter):
+			for instance in dataset:
+				for verb_idx in range(len(instance['verbs'])):
+					self.learn_from_one_instance(instance, verb_idx)
+			random.shuffle(dataset)
+
+
+if __name__ == '__main__':
+	dataset = read('./data/strn/strn.text', './data/strn/strn.props', './data/strn/strn')
+	model = Perceptron()
+	model.train(1, dataset)

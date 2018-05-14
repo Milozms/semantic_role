@@ -85,7 +85,7 @@ def read(textfile, propfile, outfile):
 		json.dump(dataset, outf)
 	return dataset
 
-def extract_feature(instance, verb_idx, position):
+def get_word_features(instance, verb_idx, position):
 	'''
 	:param instance:
 	:param verb_idx: the index of verb in instance['verbs'] , also the index of the tags in instance['tags']
@@ -172,6 +172,14 @@ def extract_feature(instance, verb_idx, position):
 
 	return features
 
+
+def get_tag_features(prev1_tag, prev2_tag=None):
+	features = []
+	features.append('T-1=' + prev1_tag)
+	if prev2_tag:
+		features.append('T-2=' + prev2_tag)
+		features.append('T-2,-1=' + prev2_tag + ',' + prev1_tag)
+	return features
 
 def get_all_classes(dataset):
 	classes = set()
