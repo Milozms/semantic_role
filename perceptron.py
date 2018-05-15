@@ -1,9 +1,10 @@
 from collections import defaultdict
-from prepro import read, get_tag_features,init_features_for_instance, get_static_features
+from prepro import read, get_tag_features, init_features_for_instance, get_static_features
 import random
 import json
 import numpy as np
 from tqdm import tqdm
+import cProfile
 MINSCORE = -10000000.0
 
 class Perceptron(object):
@@ -23,11 +24,17 @@ class Perceptron(object):
 		self.n_class = n_class
 		# self.transition = np.zeros(shape=[n_class, n_class, n_class], dtype=np.float32)
 
-	def get_tag_features_from_id(self, prev1_tag_id, prev2_tag_id=None):
-		if prev2_tag_id:
-			return get_tag_features(self.classes[prev1_tag_id], self.classes[prev2_tag_id])
-		else:
-			return get_tag_features(self.classes[prev1_tag_id])
+	def get_tag_features_from_id(self, prev1_tag_id, prev2_tag_id=None, order=1):
+		features = []
+		prev1_tag = self.classes[prev1_tag_id]
+		if order == 1:
+			features.append('T-1=' + prev1_tag)
+		elif order == 2 and prev2_tag_id:
+			prev2_tag = self.classes[prev2_tag_id]
+			features.append('T-2=' + prev2_tag)
+			features.append('T-2,-1=' + prev2_tag + ',' + prev1_tag)
+			return features
+		return features
 
 	def update_weights(self, golden, pred, features):
 		'''
@@ -81,24 +88,29 @@ class Perceptron(object):
 
 		# Compute scores for second position
 		position = 1
-		features = get_static_features(instance, verb_idx, position)
+		static_features = get_static_features(instance, verb_idx, position)
 		for label_id in range(1, n_class):
+			static_score = self.feature_score(static_features, label_id)
 			for prev1 in range(1, n_class):
-				features += self.get_tag_features_from_id(prev1)
+				tag_features = self.get_tag_features_from_id(prev1)
+				score = static_score + self.feature_score(tag_features, label_id)
 				lattice[position][prev1][label_id] = \
-					lattice[position - 1][START][prev1] + self.feature_score(features, label_id)
+					lattice[position - 1][START][prev1] + score
 
 		# Dynamic programming
 		for position in range(2, length):
 			static_features = get_static_features(instance, verb_idx, position)
 			for label_id in range(1, n_class):
+				static_feat_score = self.feature_score(static_features, label_id)
 				for prev1 in range(1, n_class):
-					static_feat_score = self.feature_score(static_features, label_id)
 					max_score = MINSCORE
 					best_prev2 = None
+					prev1_features = self.get_tag_features_from_id(prev1)
+					prev1_score = self.feature_score(prev1_features, label_id)
 					for prev2 in range(1, n_class):  # prev_2 can't be START
-						tag_features = self.get_tag_features_from_id(prev1, prev2)
-						score = lattice[position - 1][prev2][prev1] + self.feature_score(tag_features, label_id)
+						prev2_features = self.get_tag_features_from_id(prev1, prev2, 2)
+						prev2_score = self.feature_score(prev2_features, label_id)
+						score = lattice[position - 1][prev2][prev1] + prev1_score + prev2_score
 						if score > max_score:
 							max_score = score
 							best_prev2 = prev2
@@ -188,8 +200,9 @@ class Perceptron(object):
 
 
 if __name__ == '__main__':
-	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')[:100]
+	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')[:20]
 	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
 	model = Perceptron()
-	model.train(4, trn)
-	model.valid(dev)
+	cProfile.run('model.train(1, trn)')
+	# model.train(1, trn)
+	# model.valid(dev)
