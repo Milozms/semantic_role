@@ -1,8 +1,9 @@
 from collections import defaultdict
-from prepro import read, get_word_features, get_tag_features
+from prepro import read, get_tag_features,init_features_for_instance, get_static_features
 import random
 import json
 import numpy as np
+from tqdm import tqdm
 MINSCORE = -10000000.0
 
 class Perceptron(object):
@@ -74,24 +75,25 @@ class Perceptron(object):
 
 		# Compute scores for first position
 		position = 0
+		features = get_static_features(instance, verb_idx, position)
 		for label_id in range(1, n_class):
-			features = get_word_features(instance, verb_idx, position)
 			lattice[position][START][label_id] = self.feature_score(features, label_id)
 
 		# Compute scores for second position
 		position = 1
+		features = get_static_features(instance, verb_idx, position)
 		for label_id in range(1, n_class):
 			for prev1 in range(1, n_class):
-				features = get_word_features(instance, verb_idx, position) + self.get_tag_features_from_id(prev1)
+				features += self.get_tag_features_from_id(prev1)
 				lattice[position][prev1][label_id] = \
 					lattice[position - 1][START][prev1] + self.feature_score(features, label_id)
 
 		# Dynamic programming
 		for position in range(2, length):
+			static_features = get_static_features(instance, verb_idx, position)
 			for label_id in range(1, n_class):
 				for prev1 in range(1, n_class):
-					word_features = get_word_features(instance, verb_idx, position)
-					word_feat_score = self.feature_score(word_features, label_id)
+					static_feat_score = self.feature_score(static_features, label_id)
 					max_score = MINSCORE
 					best_prev2 = None
 					for prev2 in range(1, n_class):  # prev_2 can't be START
@@ -100,7 +102,7 @@ class Perceptron(object):
 						if score > max_score:
 							max_score = score
 							best_prev2 = prev2
-					lattice[position][prev1][label_id] = max_score + word_feat_score
+					lattice[position][prev1][label_id] = max_score + static_feat_score
 					back[position][prev1][label_id] = best_prev2
 
 		# find the best tag for the last two word
@@ -123,7 +125,7 @@ class Perceptron(object):
 
 		decode_tags = [self.classes[label_id] for label_id in decode_sequence]
 
-		return decode_sequence
+		return decode_tags
 
 	def learn_from_one_instance(self, instance, verb_idx):
 		golden = instance['tags'][verb_idx]
@@ -134,7 +136,8 @@ class Perceptron(object):
 
 		for pos in range(length):
 			if golden[pos] != pred[pos]:
-				features = get_word_features(instance, verb_idx, pos)
+				# word features, predicate_features, relative_features
+				features = get_static_features(instance, verb_idx, pos)
 				if pos >= 2:
 					features += get_tag_features(golden[pos - 1], golden[pos - 2])
 				elif pos == 1:
@@ -143,14 +146,50 @@ class Perceptron(object):
 
 
 	def train(self, niter, dataset):
-		for iter in range(niter):
-			for instance in dataset:
+		for instance in dataset:
+			init_features_for_instance(instance)
+		for iter in tqdm(range(niter)):
+			for instance in tqdm(dataset):
 				for verb_idx in range(len(instance['verbs'])):
 					self.learn_from_one_instance(instance, verb_idx)
 			random.shuffle(dataset)
 
+	def valid(self, dataset):
+		wordcnt = 0.0
+		wordacc = 0.0
+		verbcnt = 0.0
+		verbacc = 0.0
+		sentcnt = 0.0
+		sentacc = 0.0
+		for instance in dataset:
+			init_features_for_instance(instance)
+			sentcnt += 1.0
+			instance_true = True
+			for verb_idx in range(len(instance['verbs'])):
+				verbcnt += 1.0
+				decode_tags = self.viterbi_decode(instance, verb_idx)
+				golden_tags = instance['tags'][verb_idx]
+				length = instance['len']
+				assert len(golden_tags) == length
+				assert len(decode_tags) == length
+				for idx in range(length):
+					wordcnt += 1.0
+					if decode_tags[idx] == golden_tags[idx]:
+						wordacc += 1.0
+				if golden_tags == decode_tags:
+					verbacc += 1.0
+				else:
+					instance_true = False
+			if instance_true:
+				sentacc += 1.0
+		print('Instance accuracy: %f' % (sentacc/sentcnt))
+		print('Verb accuracy: %f' % (verbacc/verbcnt))
+		print('Word accuracy: %f' % (wordacc/wordcnt))
+
 
 if __name__ == '__main__':
-	dataset = read('./data/strn/strn.text', './data/strn/strn.props', './data/strn/strn')
+	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')[:100]
+	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
 	model = Perceptron()
-	model.train(1, dataset)
+	model.train(4, trn)
+	model.valid(dev)

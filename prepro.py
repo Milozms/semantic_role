@@ -85,27 +85,20 @@ def read(textfile, propfile, outfile):
 		json.dump(dataset, outf)
 	return dataset
 
-def get_word_features(instance, verb_idx, position):
+def get_word_features(instance, position):
 	'''
 	:param instance:
-	:param verb_idx: the index of verb in instance['verbs'] , also the index of the tags in instance['tags']
 	:param position: the position of current word
 	:return:
 	'''
 	assert position < instance['len']
-	assert verb_idx < len(instance['verbs'])
 	words = ['<S>', '<S>'] + instance['words'] + ['<E>', '<E>']
 	pos = ['<S>', '<S>'] + instance['pos'] + ['<E>', '<E>']
 	pb = position + 2  # biased position
 	length = instance['len']
-	tags = instance['tags'][verb_idx]
-	verb_postion, verb = instance['verbs'][verb_idx]
-	vpb = verb_postion + 2 # biased position
 	features = []
 
-	'''
-	Word unigram, bigram, trigram
-	'''
+	# Word unigram, bigram, trigram
 	features.append('W0=' + words[pb])
 	features.append('W-1=' + words[pb - 1])
 	features.append('W-2=' + words[pb - 2])
@@ -116,9 +109,8 @@ def get_word_features(instance, verb_idx, position):
 	features.append('W-1,0,+1=' + words[pb - 1] + ',' + words[pb] + ',' + words[pb + 1])
 	features.append('W-2,-1,0=' + words[pb - 2] + ',' + words[pb - 1] + ',' + words[pb])
 	features.append('W0,+1,+2=' + words[pb] + ',' + words[pb + 1] + ',' + words[pb + 2])
-	'''
-	POS unigram, bigram, trigram
-	'''
+
+	# POS unigram, bigram, trigram
 	features.append('P0=' + pos[pb])
 	features.append('P-1=' + pos[pb - 1])
 	features.append('P-2=' + pos[pb - 2])
@@ -129,9 +121,21 @@ def get_word_features(instance, verb_idx, position):
 	features.append('P-1,0,+1=' + pos[pb - 1] + ',' + pos[pb] + ',' + pos[pb + 1])
 	features.append('P-2,-1,0=' + pos[pb - 2] + ',' + pos[pb - 1] + ',' + pos[pb])
 	features.append('P0,+1,+2=' + pos[pb] + ',' + pos[pb + 1] + ',' + pos[pb + 2])
+
+	return features
+
+def get_relative_features(instance, verb_idx, position):
 	'''
-	Predicate relative position & distance
+	:param instance:
+	:param verb_idx: the index of verb in instance['verbs'] , also the index of the tags in instance['tags']
+	:param position: the position of current word
+	:return:
 	'''
+	assert verb_idx < len(instance['verbs'])
+	verb_postion, verb = instance['verbs'][verb_idx]
+	features = []
+
+	# Predicate relative position & distance
 	if position < verb_postion:
 		features.append('Before_Predicate')
 	elif position == verb_postion:
@@ -140,30 +144,42 @@ def get_word_features(instance, verb_idx, position):
 		features.append('After_Predicate')
 	features.append('Distance=' + str(position - verb_postion))
 
+	return features
+
+
+def get_predicate_features(instance, verb_idx):
 	'''
-	Sentence level features
+	:param instance:
+	:param verb_idx: the index of verb in instance['verbs'] , also the index of the tags in instance['tags']
+	:param position: the position of current word
+	:return:
 	'''
-	'''
-	Length
-	'''
+	assert verb_idx < len(instance['verbs'])
+	words = ['<S>', '<S>'] + instance['words'] + ['<E>', '<E>']
+	pos = ['<S>', '<S>'] + instance['pos'] + ['<E>', '<E>']
+	length = instance['len']
+	tags = instance['tags'][verb_idx]
+	verb_postion, verb = instance['verbs'][verb_idx]
+	vpb = verb_postion + 2  # biased position
+	features = []
+
+	# Sentence level features
+	# Length
 	features.append('Len=' + str(length))
-	'''
-	Predicate & POS & Number
-	'''
+
+	# Predicate & POS & Number
 	features.append('Pred=' + verb)
 	features.append('PredPOS=' + pos[vpb])
 	features.append('PredNum=' + str(len(instance['verbs'])))
-	'''
-	Predicate context word unigram, bigram, trigram
-	'''
+
+	# Predicate context word unigram, bigram, trigram
 	features.append('PW-1,0=' + words[vpb - 1] + ',' + words[vpb])
 	features.append('PW0,+1=' + words[vpb] + ',' + words[vpb + 1])
 	features.append('PW-1,0,+1=' + words[vpb - 1] + ',' + words[vpb] + ',' + words[vpb + 1])
 	features.append('PW-2,-1,0=' + words[vpb - 2] + ',' + words[vpb - 1] + ',' + words[vpb])
 	features.append('PW0,+1,+2=' + words[vpb] + ',' + words[vpb + 1] + ',' + words[vpb + 2])
-	'''
-	Predicate context POS unigram, bigram, trigram
-	'''
+
+	# Predicate context POS unigram, bigram, trigram
 	features.append('PP-1,0=' + pos[vpb - 1] + ',' + pos[vpb])
 	features.append('PP0,+1=' + pos[vpb] + ',' + pos[vpb + 1])
 	features.append('PP-1,0,+1=' + pos[vpb - 1] + ',' + pos[vpb] + ',' + pos[vpb + 1])
@@ -172,6 +188,36 @@ def get_word_features(instance, verb_idx, position):
 
 	return features
 
+def init_features_for_instance(instance):
+	'''
+	Initialize instance['word_features'] and instance['pred_features']
+	:param instance:
+	:return:
+	'''
+	word_features = []
+	length = len(instance['words'])
+	assert length == instance['len']
+	for pos in range(length):
+		word_features.append(get_word_features(instance, pos))
+	instance['word_features'] = word_features
+	pred_features = []
+	vcnt = len(instance['verbs'])
+	for verb_idx in range(vcnt):
+		pred_features.append(get_predicate_features(instance, verb_idx))
+	instance['pred_features'] = pred_features
+	return instance
+
+def get_static_features(instance, verb_idx, position):
+	'''
+	Features except tag features: word_features,
+	Before call this function, instance['word_features'] and instance['pred_features'] must be initialized!!!!
+	:param instance:
+	:param verb_idx:
+	:param position:
+	:return:
+	'''
+	return instance['word_features'][position] + instance['pred_features'][verb_idx] \
+		   + get_relative_features(instance, verb_idx, position)
 
 def get_tag_features(prev1_tag, prev2_tag=None):
 	features = []
