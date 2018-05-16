@@ -97,30 +97,31 @@ def get_word_features(instance, position):
 	pb = position + 2  # biased position
 	length = instance['len']
 	features = []
+	fappend = features.append
 
 	# Word unigram, bigram, trigram
-	features.append('W0=' + words[pb])
-	features.append('W-1=' + words[pb - 1])
-	features.append('W-2=' + words[pb - 2])
-	features.append('W+1=' + words[pb + 1])
-	features.append('W+2=' + words[pb + 2])
-	features.append('W-1,0=' + words[pb - 1] + ',' + words[pb])
-	features.append('W0,+1=' + words[pb] + ',' + words[pb + 1])
-	features.append('W-1,0,+1=' + words[pb - 1] + ',' + words[pb] + ',' + words[pb + 1])
-	features.append('W-2,-1,0=' + words[pb - 2] + ',' + words[pb - 1] + ',' + words[pb])
-	features.append('W0,+1,+2=' + words[pb] + ',' + words[pb + 1] + ',' + words[pb + 2])
+	fappend('W0=%s' % words[pb])
+	fappend('W-1=%s' % words[pb - 1])
+	fappend('W-2=%s' % words[pb - 2])
+	fappend('W+1=%s' % words[pb + 1])
+	fappend('W+2=%s' % words[pb + 2])
+	fappend('W-1,0=%s,%s' % (words[pb - 1], words[pb]))
+	fappend('W0,+1=%s,%s' % (words[pb], words[pb + 1]))
+	fappend('W-1,0,+1=%s,%s,%s' % (words[pb - 1], words[pb], words[pb + 1]))
+	fappend('W-2,-1,0=%s,%s,%s' % (words[pb - 2], words[pb - 1], words[pb]))
+	fappend('W0,+1,+2=%s,%s,%s' % (words[pb], words[pb + 1], words[pb + 2]))
 
 	# POS unigram, bigram, trigram
-	features.append('P0=' + pos[pb])
-	features.append('P-1=' + pos[pb - 1])
-	features.append('P-2=' + pos[pb - 2])
-	features.append('P+1=' + pos[pb + 1])
-	features.append('P+2=' + pos[pb + 2])
-	features.append('P-1,0=' + pos[pb - 1] + ',' + pos[pb])
-	features.append('P0,+1=' + pos[pb] + ',' + pos[pb + 1])
-	features.append('P-1,0,+1=' + pos[pb - 1] + ',' + pos[pb] + ',' + pos[pb + 1])
-	features.append('P-2,-1,0=' + pos[pb - 2] + ',' + pos[pb - 1] + ',' + pos[pb])
-	features.append('P0,+1,+2=' + pos[pb] + ',' + pos[pb + 1] + ',' + pos[pb + 2])
+	fappend('P0=%s' % pos[pb])
+	fappend('P-1=%s' % pos[pb - 1])
+	fappend('P-2=%s' % pos[pb - 2])
+	fappend('P+1=%s' % pos[pb + 1])
+	fappend('P+2=%s' % pos[pb + 2])
+	fappend('P-1,0=%s,%s' % (pos[pb - 1], pos[pb]))
+	fappend('P0,+1=%s,%s' % (pos[pb], pos[pb + 1]))
+	fappend('P-1,0,+1=%s,%s,%s' % (pos[pb - 1], pos[pb], pos[pb + 1]))
+	fappend('P-2,-1,0=%s,%s,%s' % (pos[pb - 2], pos[pb - 1], pos[pb]))
+	fappend('P0,+1,+2=%s,%s,%s' % (pos[pb], pos[pb + 1], pos[pb + 2]))
 
 	return features
 
@@ -134,15 +135,16 @@ def get_relative_features(instance, verb_idx, position):
 	assert verb_idx < len(instance['verbs'])
 	verb_postion, verb = instance['verbs'][verb_idx]
 	features = []
+	fappend = features.append
 
 	# Predicate relative position & distance
 	if position < verb_postion:
-		features.append('Before_Predicate')
+		fappend('Before_Predicate')
 	elif position == verb_postion:
-		features.append('Is_Predicate')
+		fappend('Is_Predicate')
 	else:
-		features.append('After_Predicate')
-	features.append('Distance=' + str(position - verb_postion))
+		fappend('After_Predicate')
+	fappend('Distance=%d' % (position - verb_postion))
 
 	return features
 
@@ -162,29 +164,30 @@ def get_predicate_features(instance, verb_idx):
 	verb_postion, verb = instance['verbs'][verb_idx]
 	vpb = verb_postion + 2  # biased position
 	features = []
+	fappend = features.append
 
 	# Sentence level features
 	# Length
-	features.append('Len=' + str(length))
+	fappend('Len=%d' % length)
 
 	# Predicate & POS & Number
-	features.append('Pred=' + verb)
-	features.append('PredPOS=' + pos[vpb])
-	features.append('PredNum=' + str(len(instance['verbs'])))
+	fappend('Pred=%s' % verb)
+	fappend('PredPOS=%s' % pos[vpb])
+	fappend('PredNum=%d' % len(instance['verbs']))
 
 	# Predicate context word unigram, bigram, trigram
-	features.append('PW-1,0=' + words[vpb - 1] + ',' + words[vpb])
-	features.append('PW0,+1=' + words[vpb] + ',' + words[vpb + 1])
-	features.append('PW-1,0,+1=' + words[vpb - 1] + ',' + words[vpb] + ',' + words[vpb + 1])
-	features.append('PW-2,-1,0=' + words[vpb - 2] + ',' + words[vpb - 1] + ',' + words[vpb])
-	features.append('PW0,+1,+2=' + words[vpb] + ',' + words[vpb + 1] + ',' + words[vpb + 2])
+	fappend('PW-1,0=%s,%s' % (words[vpb - 1], words[vpb]))
+	fappend('PW0,+1=%s,%s' % (words[vpb], words[vpb + 1]))
+	fappend('PW-1,0,+1=%s,%s,%s' % (words[vpb - 1], words[vpb], words[vpb + 1]))
+	fappend('PW-2,-1,0=%s,%s,%s' % (words[vpb - 2], words[vpb - 1], words[vpb]))
+	fappend('PW0,+1,+2=%s,%s,%s' % (words[vpb], words[vpb + 1], words[vpb + 2]))
 
 	# Predicate context POS unigram, bigram, trigram
-	features.append('PP-1,0=' + pos[vpb - 1] + ',' + pos[vpb])
-	features.append('PP0,+1=' + pos[vpb] + ',' + pos[vpb + 1])
-	features.append('PP-1,0,+1=' + pos[vpb - 1] + ',' + pos[vpb] + ',' + pos[vpb + 1])
-	features.append('PP-2,-1,0=' + pos[vpb - 2] + ',' + pos[vpb - 1] + ',' + pos[vpb])
-	features.append('PP0,+1,+2=' + pos[vpb] + ',' + pos[vpb + 1] + ',' + pos[vpb + 2])
+	fappend('PP-1,0=%s,%s' % (pos[vpb - 1], pos[vpb]))
+	fappend('PP0,+1=%s,%s' % (pos[vpb], pos[vpb + 1]))
+	fappend('PP-1,0,+1=%s,%s,%s' % (pos[vpb - 1], pos[vpb], pos[vpb + 1]))
+	fappend('PP-2,-1,0=%s,%s,%s' % (pos[vpb - 2], pos[vpb - 1], pos[vpb]))
+	fappend('PP0,+1,+2=%s,%s,%s' % (pos[vpb], pos[vpb + 1], pos[vpb + 2]))
 
 	return features
 
@@ -221,10 +224,11 @@ def get_static_features(instance, verb_idx, position):
 
 def get_tag_features(prev1_tag, prev2_tag=None):
 	features = []
-	features.append('T-1=' + prev1_tag)
+	fappend = features.append
+	fappend('T-1=' + prev1_tag)
 	if prev2_tag:
-		features.append('T-2=' + prev2_tag)
-		features.append('T-2,-1=' + prev2_tag + ',' + prev1_tag)
+		fappend('T-2=' + prev2_tag)
+		fappend('T-2,-1=' + prev2_tag + ',' + prev1_tag)
 	return features
 
 def get_all_classes(dataset):

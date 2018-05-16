@@ -139,9 +139,75 @@ class Perceptron(object):
 
 		return decode_tags
 
+	def viterbi_decode_bigram(self, instance, verb_idx):
+		'''
+		:param instance:
+		:param verb_idx:
+		:return:
+		lattice[k][u]: the maximum probability of any tag sequences ending with u at position k
+		lattice[k][u] = max(arg: w)(lattice[k-1][w] + feature_score(word, w, u))
+		u: prev1, w: prev2
+		back[k][u]: argmax
+		'''
+		length = instance['len']
+		n_class = self.n_class
+		lattice = np.zeros(shape=[length, n_class], dtype=np.float32)
+		back = np.zeros(shape=[length, n_class], dtype=np.int32)
+		START = self.label2id['START']  # label id for START symbol = 0
+
+		# Compute scores for first position
+		position = 0
+		features = get_static_features(instance, verb_idx, position)
+		for label_id in range(1, n_class):
+			lattice[position][label_id] = self.feature_score(features, label_id)
+
+		# Dynamic programming
+		for position in range(1, length):
+			static_features = get_static_features(instance, verb_idx, position)
+			for label_id in range(1, n_class):
+				static_feat_score = self.feature_score(static_features, label_id)
+				max_score = MINSCORE
+				best_prev1 = 1
+				for prev1 in self.prev_classes(label_id):
+					prev1_features = self.get_tag_features_from_id(prev1)
+					prev1_score = self.feature_score(prev1_features, label_id)
+					score = lattice[position - 1][prev1] + prev1_score
+					if score > max_score:
+						max_score = score
+						best_prev1 = prev1
+				lattice[position][label_id] = max_score + static_feat_score
+				back[position][label_id] = best_prev1
+
+		# find the best tag for the last two word
+		best_last1 = 1
+		max_score = MINSCORE
+		for last1 in range(1, n_class):
+			if lattice[length - 1][last1] > max_score:
+				max_score = lattice[length - 1][last1]
+				best_last1 = last1
+
+		decode_sequence = [0] * (length - 1) + [best_last1]
+
+		# Back track
+		for position in range(length - 2, 0, -1):
+			u = decode_sequence[position + 1]
+			decode_sequence[position] = back[position + 1][u]
+
+		decode_tags = [self.classes[label_id] for label_id in decode_sequence]
+
+		return decode_tags
+
+	def prev_classes(self, label_id):
+		label = self.classes[label_id]
+		if label[-1] != 'I':
+			return range(1, self.n_class)
+		tag = label.split('-')[0]
+		pclss = [self.label2id[tag + '-B'], label_id]
+		return pclss
+
 	def learn_from_one_instance(self, instance, verb_idx):
 		golden = instance['tags'][verb_idx]
-		pred = self.viterbi_decode(instance, verb_idx)
+		pred = self.viterbi_decode_bigram(instance, verb_idx)
 		length = instance['len']
 		assert len(golden) == length
 		assert len(pred) == length
@@ -150,38 +216,50 @@ class Perceptron(object):
 			if golden[pos] != pred[pos]:
 				# word features, predicate_features, relative_features
 				features = get_static_features(instance, verb_idx, pos)
+				'''
 				if pos >= 2:
 					features += get_tag_features(golden[pos - 1], golden[pos - 2])
 				elif pos == 1:
 					features += get_tag_features(golden[pos - 1])
+				'''
+				if pos >= 1:
+					features += get_tag_features(golden[pos - 1])
 				self.update_weights(golden[pos], pred[pos], features)
 
 
-	def train(self, niter, dataset):
+	def train(self, niter, dataset, validset):
 		for instance in dataset:
 			init_features_for_instance(instance)
-		for iter in tqdm(range(niter)):
+		for iter in range(niter):
+			print('Iteration %d:' % iter)
 			for instance in tqdm(dataset):
 				for verb_idx in range(len(instance['verbs'])):
 					self.learn_from_one_instance(instance, verb_idx)
 			random.shuffle(dataset)
+			model.valid(validset, './output/valid%d.txt' % iter)
 
-	def valid(self, dataset):
+	def valid(self, dataset, filename):
 		wordcnt = 0.0
 		wordacc = 0.0
 		verbcnt = 0.0
 		verbacc = 0.0
 		sentcnt = 0.0
 		sentacc = 0.0
+		outf = open(filename, 'w')
 		for instance in dataset:
 			init_features_for_instance(instance)
+			length = instance['len']
 			sentcnt += 1.0
 			instance_true = True
-			for verb_idx in range(len(instance['verbs'])):
+			verb_col = ['-'] * length
+			verbs = instance['verbs']
+			for pos, verb in verbs:
+				verb_col[pos] = verb
+			out_tags = [verb_col]
+			for verb_idx in range(len(verbs)):
 				verbcnt += 1.0
-				decode_tags = self.viterbi_decode(instance, verb_idx)
+				decode_tags = self.viterbi_decode_bigram(instance, verb_idx)
 				golden_tags = instance['tags'][verb_idx]
-				length = instance['len']
 				assert len(golden_tags) == length
 				assert len(decode_tags) == length
 				for idx in range(length):
@@ -192,17 +270,49 @@ class Perceptron(object):
 					verbacc += 1.0
 				else:
 					instance_true = False
+				out_tags.append(self.format_convert(decode_tags))
 			if instance_true:
 				sentacc += 1.0
+			for row in range(length):
+				for col in range(len(verbs)):
+					outf.write('%s\t' % out_tags[col][row])
+				outf.write('\n')
+			outf.write('\n')
 		print('Instance accuracy: %f' % (sentacc/sentcnt))
 		print('Verb accuracy: %f' % (verbacc/verbcnt))
 		print('Word accuracy: %f' % (wordacc/wordcnt))
+		outf.close()
 
+	def format_convert(self, tags):
+		output = []
+		for i, tag in enumerate(tags):
+			if tag == 'O':
+				output.append('*')
+			elif tag == 'V-B':
+				output.append('(V*V)')
+			elif len(tag) >= 4:
+				label = tag[:2]
+				pos = tag[-1]
+				if pos == 'B':
+					if i < len(tags) - 1 and tags[i+1] == label + '-I':
+						output.append('(%s*' % label)
+					else:
+						output.append('(%s*%s)' % (label, label))
+				elif pos == 'I':
+					if i < len(tags) - 1 and tags[i+1] == label + '-I':
+						output.append('*')
+					else:
+						output.append('*%s)' % label)
+				else:
+					print('Error')
+			else:
+				print('Error')
+		return output
 
 if __name__ == '__main__':
-	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')[:20]
+	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
 	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
 	model = Perceptron()
-	cProfile.run('model.train(1, trn)')
-	# model.train(1, trn)
-	# model.valid(dev)
+	# cProfile.run('model.train(1, trn)')
+	model.valid(dev, './data/0.txt')
+	# model.train(16, trn, dev)
