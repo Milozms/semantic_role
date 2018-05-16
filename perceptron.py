@@ -172,6 +172,10 @@ class Perceptron(object):
 					lattice[position][label_id] = MINSCORE
 					back[position][label_id] = -1
 					continue
+				if position != verb_pos and label_id == vid:
+					lattice[position][label_id] = MINSCORE
+					back[position][label_id] = -1
+					continue
 				static_feat_score = self.feature_score(static_features, label_id)
 				max_score = MINSCORE
 				best_prev1 = 1
