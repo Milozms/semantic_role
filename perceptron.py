@@ -2,6 +2,7 @@ from collections import defaultdict
 from prepro import read, get_tag_features, init_features_for_instance, get_static_features
 import random
 import json
+import pickle
 import numpy as np
 from tqdm import tqdm
 import cProfile
@@ -14,7 +15,7 @@ class Perceptron(object):
 		self.weights = {}
 		self.classes = []
 		with open('./data/classes.json', 'r') as f:
-			self.classes = ['START'] + json.load(f)
+			self.classes = json.load(f)
 		cnt = 0
 		self.label2id = {}
 		for label in self.classes:
@@ -153,18 +154,24 @@ class Perceptron(object):
 		n_class = self.n_class
 		lattice = np.zeros(shape=[length, n_class], dtype=np.float32)
 		back = np.zeros(shape=[length, n_class], dtype=np.int32)
-		START = self.label2id['START']  # label id for START symbol = 0
+
+		verb_pos, verb = instance['verbs'][verb_idx]
+		vid = self.label2id['V-B']
 
 		# Compute scores for first position
 		position = 0
 		features = get_static_features(instance, verb_idx, position)
-		for label_id in range(1, n_class):
+		for label_id in range(0, n_class):
 			lattice[position][label_id] = self.feature_score(features, label_id)
 
 		# Dynamic programming
 		for position in range(1, length):
 			static_features = get_static_features(instance, verb_idx, position)
-			for label_id in range(1, n_class):
+			for label_id in range(0, n_class):
+				if position == verb_pos and label_id != vid:
+					lattice[position][label_id] = MINSCORE
+					back[position][label_id] = -1
+					continue
 				static_feat_score = self.feature_score(static_features, label_id)
 				max_score = MINSCORE
 				best_prev1 = 1
@@ -181,7 +188,7 @@ class Perceptron(object):
 		# find the best tag for the last two word
 		best_last1 = 1
 		max_score = MINSCORE
-		for last1 in range(1, n_class):
+		for last1 in range(0, n_class):
 			if lattice[length - 1][last1] > max_score:
 				max_score = lattice[length - 1][last1]
 				best_last1 = last1
@@ -189,7 +196,7 @@ class Perceptron(object):
 		decode_sequence = [0] * (length - 1) + [best_last1]
 
 		# Back track
-		for position in range(length - 2, 0, -1):
+		for position in range(length - 2, -1, -1):
 			u = decode_sequence[position + 1]
 			decode_sequence[position] = back[position + 1][u]
 
@@ -200,7 +207,7 @@ class Perceptron(object):
 	def prev_classes(self, label_id):
 		label = self.classes[label_id]
 		if label[-1] != 'I':
-			return range(1, self.n_class)
+			return range(0, self.n_class)
 		tag = label.split('-')[0]
 		pclss = [self.label2id[tag + '-B'], label_id]
 		return pclss
@@ -237,6 +244,8 @@ class Perceptron(object):
 					self.learn_from_one_instance(instance, verb_idx)
 			random.shuffle(dataset)
 			model.valid(validset, './output/valid%d.txt' % iter)
+			with open('./model/model%d.pkl' % iter, 'wb') as f:
+				pickle.dump(self, f)
 
 	def valid(self, dataset, filename):
 		wordcnt = 0.0
@@ -249,10 +258,12 @@ class Perceptron(object):
 		for instance in dataset:
 			init_features_for_instance(instance)
 			length = instance['len']
-			sentcnt += 1.0
-			instance_true = True
 			verb_col = ['-'] * length
 			verbs = instance['verbs']
+			instance_true = False
+			if len(verbs) >= 0:
+				sentcnt += 1.0
+				instance_true = True
 			for pos, verb in verbs:
 				verb_col[pos] = verb
 			out_tags = [verb_col]
@@ -274,7 +285,7 @@ class Perceptron(object):
 			if instance_true:
 				sentacc += 1.0
 			for row in range(length):
-				for col in range(len(verbs)):
+				for col in range(len(verbs) + 1):
 					outf.write('%s\t' % out_tags[col][row])
 				outf.write('\n')
 			outf.write('\n')
@@ -314,5 +325,5 @@ if __name__ == '__main__':
 	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
 	model = Perceptron()
 	# cProfile.run('model.train(1, trn)')
-	model.valid(dev, './data/0.txt')
-	# model.train(16, trn, dev)
+	# model.valid(dev, './data/0.txt')
+	model.train(16, trn, dev)
