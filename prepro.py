@@ -1,5 +1,8 @@
 import json
-
+import numpy as np
+import linecache
+import pickle
+from tqdm import tqdm
 
 def read(textfile, propfile, outfile):
 	ftext = open(textfile, 'r')
@@ -84,6 +87,113 @@ def read(textfile, propfile, outfile):
 	with open(outfile + '.json', 'w') as outf:
 		json.dump(dataset, outf)
 	return dataset
+
+def readtest(textfile, propfile, outfile):
+	ftext = open(textfile, 'r')
+	fprop = open(propfile, 'r')
+	textlines = ftext.readlines()
+	proplines = fprop.readlines()
+	assert len(textlines) == len(proplines)
+	dataset = []
+	instance = {
+		'words': [],
+		'pos': [],
+		'props': [],
+		'len': 0
+	}
+	for i in range(len(textlines)):
+		textline = textlines[i].strip()
+		propline = proplines[i].strip()
+		if len(textline) == 0:
+			if instance['len'] > 0:
+				dataset.append(instance)
+			instance = {
+				'words': [],
+				'pos': [],
+				'props': [],
+				'len': 0
+			}
+			continue
+		word, pos = textline.split()
+		instance['words'].append(word)
+		instance['pos'].append(pos)
+		prop = propline.split()
+		instance['props'].append(prop)
+		instance['len'] += 1
+
+	ftext.close()
+	fprop.close()
+
+	'''
+	convert props format to IOB format
+	'''
+	for idx, instance in enumerate(dataset):
+		verbcnt = len(instance['props'][0]) - 1
+		verbs = []
+		for propidx, prop in enumerate(instance['props']):
+			if prop[0] != '-':
+				verbs.append((propidx, prop[0]))  # (verb_postion, verb)
+		assert verbcnt == len(verbs)
+		instance['verbs'] = verbs  # (verb_postion, verb)
+		instance.pop('props')
+		dataset[idx] = instance
+
+	with open(outfile + '.json', 'w') as outf:
+		json.dump(dataset, outf)
+	return dataset
+
+def build_word_list():
+	test = readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
+	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
+	wordset = set()
+	for dset in [test, dev, trn]:
+		for instance in dset:
+			for word in instance['words']:
+				wordset.add(word)
+	print("Word count: %d" % len(wordset))
+	wordlist = list(wordset)
+	with open('./data/dicts/wordlist.json', 'w') as f:
+		json.dump(list(wordlist), f)
+	return wordlist
+
+def build_word_dict_emb():
+	dim = 300
+	with open('./data/dicts/wordlist.json', 'r') as f:
+		wordlist = json.load(f)
+	word2id = {}
+	for i, word in enumerate(wordlist):
+		word2id[word] = i
+	vocab_size = len(wordlist)
+	emb = np.zeros([vocab_size, dim])
+	# initialized = {}
+	pretrained = 0
+	# avg_sigma = 0
+	# avg_mu = 0
+	for line in tqdm(linecache.getlines('/Users/zms/Documents/学习资料/NLP/中文词向量embedding/vectorsw300l20.all')):
+		line = line.strip()
+		tokens = line.split()
+		word = tokens[0]
+		if word in word2id:
+			vec = np.array([float(tok) for tok in tokens[-dim:]])
+			wordid = word2id[word]
+			emb[wordid] = vec
+			# initialized[word] = True
+			pretrained += 1
+			# mu = vec.mean()
+			# sigma = np.std(vec)
+			# avg_mu += mu
+			# avg_sigma += sigma
+	# avg_sigma /= 1. * pretrained
+	# avg_mu /= 1. * pretrained
+	# for w in word2id:
+	# 	if w not in initialized:
+	# 		emb[word2id[w]] = np.random.normal(avg_mu, avg_sigma, (dim,))
+	print('Pretrained: %d, Total: %d' % (pretrained, vocab_size))
+	with open('./data/dicts/wordemb.pickle', 'wb') as f:
+		pickle.dump(emb, f)
+	with open('./data/dicts/word2id.json', 'w') as f:
+		json.dump(word2id, f)
 
 def get_word_features(instance, position):
 	'''
@@ -191,24 +301,33 @@ def get_predicate_features(instance, verb_idx):
 
 	return features
 
-def init_features_for_instance(instance):
+def init_features_for_instance(instance, word2id):
 	'''
-	Initialize instance['word_features'] and instance['pred_features']
+	Initialize instance['word_features'] and instance['pred_features'], instance['word_idx']
 	:param instance:
 	:return:
 	'''
 	word_features = []
-	length = len(instance['words'])
+	word_idx = []
+	words = instance['words']
+	length = len(words)
 	assert length == instance['len']
 	for pos in range(length):
+		word_idx.append(word2id[words[pos]])
 		word_features.append(get_word_features(instance, pos))
 	instance['word_features'] = word_features
+	instance['word_idx'] = word_idx
 	pred_features = []
 	vcnt = len(instance['verbs'])
 	for verb_idx in range(vcnt):
 		pred_features.append(get_predicate_features(instance, verb_idx))
 	instance['pred_features'] = pred_features
 	return instance
+
+def init_features_for_dset(dset, word2id):
+	for instance in dset:
+		init_features_for_instance(instance, word2id)
+	return dset
 
 def get_static_features(instance, verb_idx, position):
 	'''
@@ -244,6 +363,8 @@ def get_all_classes(dataset):
 	return classes
 
 if __name__ == '__main__':
-	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
-	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
-	classes = get_all_classes(dev + trn)
+	# dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	# trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
+	# classes = get_all_classes(dev + trn)
+	build_word_list()
+	build_word_dict_emb()
