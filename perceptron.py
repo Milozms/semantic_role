@@ -34,6 +34,8 @@ class Perceptron(object):
 		# weight matrix for word vectors
 		self.vecdim = 300
 		self.weight_mat = np.random.normal(loc=0, scale=1.0, size=[n_class, self.vecdim])
+		# weight matrix for verb vectors
+		# self.verb_weight_mat = np.random.normal(loc=0, scale=1.0, size=[n_class, self.vecdim])
 
 	def get_tag_features_from_id(self, prev1_tag_id, prev2_tag_id=None, order=1):
 		features = []
@@ -99,6 +101,9 @@ class Perceptron(object):
 		verb_pos, verb = instance['verbs'][verb_idx]
 		vid = self.label2id['V-B']
 		word_idx = instance['word_idx']
+
+		verbid = instance['verbs_id'][verb_idx]
+		verbvec = self.emb[verbid]
 
 		# Compute scores for first position
 		position = 0

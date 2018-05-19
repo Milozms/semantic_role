@@ -303,7 +303,7 @@ def get_predicate_features(instance, verb_idx):
 
 def init_features_for_instance(instance, word2id):
 	'''
-	Initialize instance['word_features'] and instance['pred_features'], instance['word_idx']
+	Initialize instance['word_features'] and instance['pred_features'], instance['word_idx'], instance['verbs_id']
 	:param instance:
 	:return:
 	'''
@@ -319,9 +319,13 @@ def init_features_for_instance(instance, word2id):
 	instance['word_idx'] = word_idx
 	pred_features = []
 	vcnt = len(instance['verbs'])
+	verbs_id = []
 	for verb_idx in range(vcnt):
 		pred_features.append(get_predicate_features(instance, verb_idx))
+		verb_pos, verb = instance['verbs'][verb_idx]
+		verbs_id.append(word2id[verb])
 	instance['pred_features'] = pred_features
+	instance['verbs_id'] = verbs_id
 	return instance
 
 def init_features_for_dset(dset, word2id):
