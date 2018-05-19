@@ -131,7 +131,7 @@ class Perceptron(object):
 		decode_sequence = [0] * (length - 2) + [best_last2, best_last1]
 
 		# Back track
-		for position in range(length - 3, 0, -1):
+		for position in range(length - 3, -1, -1):
 			u = decode_sequence[position + 1]
 			v = decode_sequence[position + 2]
 			decode_sequence[position] = back[position + 2][u][v]
@@ -162,6 +162,9 @@ class Perceptron(object):
 		position = 0
 		features = get_static_features(instance, verb_idx, position)
 		for label_id in range(0, n_class):
+			if self.classes[label_id][-1] == 'I':
+				lattice[position][label_id] = MINSCORE
+				continue
 			lattice[position][label_id] = self.feature_score(features, label_id)
 
 		# Dynamic programming
@@ -247,7 +250,7 @@ class Perceptron(object):
 				for verb_idx in range(len(instance['verbs'])):
 					self.learn_from_one_instance(instance, verb_idx)
 			random.shuffle(dataset)
-			model.valid(validset, './output/valid%d.txt' % iter)
+			self.valid(validset, './output/valid%d.txt' % iter)
 			with open('./model/model%d.pkl' % iter, 'wb') as f:
 				pickle.dump(self, f)
 
@@ -324,10 +327,17 @@ class Perceptron(object):
 				print('Error')
 		return output
 
+def loadmodel(filename, dev):
+	with open(filename, 'rb') as f:
+		model = pickle.load(f)
+		model.valid(dev, './output/dev0.txt')
+
 if __name__ == '__main__':
 	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
 	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
-	model = Perceptron()
+	loadmodel('./model/model5.pkl', dev)
+	# model = Perceptron()
 	# cProfile.run('model.train(1, trn)')
 	# model.valid(dev, './data/0.txt')
-	model.train(16, trn, dev)
+	# model.train(16, trn, dev)
+
