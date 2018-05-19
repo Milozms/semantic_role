@@ -13,6 +13,8 @@ class Perceptron(object):
 		# Each feature gets its own weight vector, so weights is a dict-of-dicts
 		# self.weights[feature][class]
 		self.weights = {}
+
+		# labels
 		self.classes = []
 		with open('./data/classes.json', 'r') as f:
 			self.classes = json.load(f)
@@ -23,7 +25,15 @@ class Perceptron(object):
 			cnt += 1
 		n_class = len(self.classes)
 		self.n_class = n_class
-		# self.transition = np.zeros(shape=[n_class, n_class, n_class], dtype=np.float32)
+
+		# word2id and word embeddings
+		with open('./data/dicts/word2id.json', 'r') as f:
+			self.word2id = json.load(f)
+		with open('./data/dicts/wordemb.pickle', 'rb') as f:
+			self.emb = pickle.load(f)
+		# weight matrix for word vectors
+		self.vecdim = 300
+		self.weight_mat = np.random.normal(loc=0, scale=1.0, size=[n_class, self.vecdim])
 
 	def get_tag_features_from_id(self, prev1_tag_id, prev2_tag_id=None, order=1):
 		features = []
@@ -37,7 +47,7 @@ class Perceptron(object):
 			return features
 		return features
 
-	def update_weights(self, golden, pred, features):
+	def update_weights(self, golden, pred, features, word_id, lr = 1.0):
 		'''
 		Update the feature weights.
 		:param golden: golden class
@@ -50,10 +60,16 @@ class Perceptron(object):
 
 		if golden == pred:
 			return
+		pred_id = self.label2id[pred]
+		gold_id = self.label2id[golden]
 		for f in features:
 			self.weights.setdefault(f, defaultdict(float))
-			upd_feat(golden, f, 1.0)
-			upd_feat(pred, f, -1.0)
+			upd_feat(golden, f, lr)
+			upd_feat(pred, f, -lr)
+		wordvec = self.emb[word_id]
+		for idx in range(self.vecdim):
+			self.weight_mat[pred_id][idx] -= lr*wordvec[idx]
+			self.weight_mat[gold_id][idx] += lr*wordvec[idx]
 
 
 	def feature_score(self, features, label_id):
@@ -82,19 +98,25 @@ class Perceptron(object):
 
 		verb_pos, verb = instance['verbs'][verb_idx]
 		vid = self.label2id['V-B']
+		word_idx = instance['word_idx']
 
 		# Compute scores for first position
 		position = 0
 		features = get_static_features(instance, verb_idx, position)
+		wordid = word_idx[position]
+		wordvec = self.emb[wordid]
 		for label_id in range(0, n_class):
 			if self.classes[label_id][-1] == 'I':
 				lattice[position][label_id] = MINSCORE
 				continue
-			lattice[position][label_id] = self.feature_score(features, label_id)
+			wvscore = np.dot(wordvec, self.weight_mat[label_id])
+			lattice[position][label_id] = self.feature_score(features, label_id) + wvscore
 
 		# Dynamic programming
 		for position in range(1, length):
 			static_features = get_static_features(instance, verb_idx, position)
+			wordid = word_idx[position]
+			wordvec = self.emb[wordid]
 			for label_id in range(0, n_class):
 				if position == verb_pos and label_id != vid:
 					lattice[position][label_id] = MINSCORE
@@ -104,7 +126,8 @@ class Perceptron(object):
 					lattice[position][label_id] = MINSCORE
 					back[position][label_id] = -1
 					continue
-				static_feat_score = self.feature_score(static_features, label_id)
+				wvscore = np.dot(wordvec, self.weight_mat[label_id])
+				static_feat_score = self.feature_score(static_features, label_id) + wvscore
 				max_score = MINSCORE
 				best_prev1 = 1
 				for prev1 in self.prev_classes(label_id):
@@ -150,20 +173,15 @@ class Perceptron(object):
 		length = instance['len']
 		assert len(golden) == length
 		assert len(pred) == length
+		word_idx = instance['word_idx']
 
 		for pos in range(length):
 			if golden[pos] != pred[pos]:
 				# word features, predicate_features, relative_features
 				features = get_static_features(instance, verb_idx, pos)
-				'''
-				if pos >= 2:
-					features += get_tag_features(golden[pos - 1], golden[pos - 2])
-				elif pos == 1:
-					features += get_tag_features(golden[pos - 1])
-				'''
 				if pos >= 1:
 					features += get_tag_features(golden[pos - 1])
-				self.update_weights(golden[pos], pred[pos], features)
+				self.update_weights(golden[pos], pred[pos], features, word_idx[pos])
 
 
 	def train(self, niter, dataset, validset):
@@ -176,8 +194,7 @@ class Perceptron(object):
 					self.learn_from_one_instance(instance, verb_idx)
 			random.shuffle(dataset)
 			self.valid(validset, './output/valid%d.txt' % iter)
-			with open('./model/model%d.pkl' % iter, 'wb') as f:
-				pickle.dump(self, f)
+			self.save('./model/model%d.pkl' % iter)
 
 	def valid(self, dataset, filename):
 		wordcnt = 0.0
@@ -187,7 +204,7 @@ class Perceptron(object):
 		sentcnt = 0.0
 		sentacc = 0.0
 		outf = open(filename, 'w')
-		for instance in dataset:
+		for instance in tqdm(dataset):
 			# init_features_for_instance(instance)
 			length = instance['len']
 			verb_col = ['-'] * length
@@ -252,10 +269,48 @@ class Perceptron(object):
 				print('Error')
 		return output
 
-def loadmodel(filename, dev):
+	def save(self, filename):
+		with open(filename, 'wb') as f:
+			pickle.dump(self, f)
+
+	def model_plus(self, mb):
+		'''
+		self += mb
+		'''
+		for feat in self.weights:
+			wa = self.weights[feat]
+			wb = mb.weights[feat]
+			for label in wa:
+				wa[label] += wb[label]
+
+		for label_id in range(self.n_class):
+			for idx in range(self.vecdim):
+				self.weight_mat[label_id][idx] += mb.weight_mat[label_id][idx]
+
+	def model_div(self, cnt):
+		for feat in self.weights:
+			wa = self.weights[feat]
+			for label in wa:
+				wa[label] /= cnt
+
+		for label_id in range(self.n_class):
+			for idx in range(self.vecdim):
+				self.weight_mat[label_id][idx] /= cnt
+
+
+def loadmodel(filename):
 	with open(filename, 'rb') as f:
 		model = pickle.load(f)
-		model.valid(dev, './output/dev0.txt')
+		return model
+
+def average_model(dev):
+	model = loadmodel('./model/model1.pkl')
+	for iter in range(2, 8):
+		model_iter = loadmodel('./model/model%d.pkl' % iter)
+		model.model_plus(model_iter)
+	model.model_div(8)
+	model.valid(dev, './output/aver.txt')
+
 
 if __name__ == '__main__':
 	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
@@ -264,9 +319,9 @@ if __name__ == '__main__':
 		word2id = json.load(f)
 	init_features_for_dset(trn, word2id)
 	init_features_for_dset(dev, word2id)
-	loadmodel('./model/model5.pkl', dev)
+	# loadmodel('./model/model5.pkl', dev)
 	# model = Perceptron()
 	# cProfile.run('model.train(1, trn)')
 	# model.valid(dev, './data/0.txt')
 	# model.train(16, trn, dev)
-
+	average_model(dev)
