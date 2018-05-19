@@ -1,5 +1,5 @@
 from collections import defaultdict
-from prepro import read, get_tag_features, init_features_for_instance, get_static_features
+from prepro import read, get_tag_features, init_features_for_dset, get_static_features
 import random
 import json
 import pickle
@@ -64,81 +64,6 @@ class Perceptron(object):
 				continue
 			score += self.weights[feat][label]
 		return score
-
-	def viterbi_decode(self, instance, verb_idx):
-		'''
-		:param instance:
-		:param verb_idx:
-		:return:
-		lattice[k][u][v]: the maximum probability of any tag sequences ending with u, v at position k
-		lattice[k][u][v] = max(arg: w)(lattice[k-1][w][u] + feature_score(word, w, u, v))
-		u: prev1, w: prev2
-		back[k][u][v]: argmax
-		'''
-		length = instance['len']
-		n_class = self.n_class
-		lattice = np.zeros(shape=[length, n_class, n_class], dtype=np.float32)
-		back = np.zeros(shape=[length, n_class, n_class], dtype=np.int32)
-		START = self.label2id['START']  # label id for START symbol = 0
-
-		# Compute scores for first position
-		position = 0
-		features = get_static_features(instance, verb_idx, position)
-		for label_id in range(1, n_class):
-			lattice[position][START][label_id] = self.feature_score(features, label_id)
-
-		# Compute scores for second position
-		position = 1
-		static_features = get_static_features(instance, verb_idx, position)
-		for label_id in range(1, n_class):
-			static_score = self.feature_score(static_features, label_id)
-			for prev1 in range(1, n_class):
-				tag_features = self.get_tag_features_from_id(prev1)
-				score = static_score + self.feature_score(tag_features, label_id)
-				lattice[position][prev1][label_id] = \
-					lattice[position - 1][START][prev1] + score
-
-		# Dynamic programming
-		for position in range(2, length):
-			static_features = get_static_features(instance, verb_idx, position)
-			for label_id in range(1, n_class):
-				static_feat_score = self.feature_score(static_features, label_id)
-				for prev1 in range(1, n_class):
-					max_score = MINSCORE
-					best_prev2 = None
-					prev1_features = self.get_tag_features_from_id(prev1)
-					prev1_score = self.feature_score(prev1_features, label_id)
-					for prev2 in range(1, n_class):  # prev_2 can't be START
-						prev2_features = self.get_tag_features_from_id(prev1, prev2, 2)
-						prev2_score = self.feature_score(prev2_features, label_id)
-						score = lattice[position - 1][prev2][prev1] + prev1_score + prev2_score
-						if score > max_score:
-							max_score = score
-							best_prev2 = prev2
-					lattice[position][prev1][label_id] = max_score + static_feat_score
-					back[position][prev1][label_id] = best_prev2
-
-		# find the best tag for the last two word
-		best_last1 = None
-		best_last2 = None
-		max_score = MINSCORE
-		for last1 in range(1, n_class):
-			for last2 in range(1, n_class):
-				if lattice[length - 1][last2][last1] > max_score:
-					max_score = lattice[length - 1][last2][last1]
-					best_last1, best_last2 = last1, last2
-
-		decode_sequence = [0] * (length - 2) + [best_last2, best_last1]
-
-		# Back track
-		for position in range(length - 3, -1, -1):
-			u = decode_sequence[position + 1]
-			v = decode_sequence[position + 2]
-			decode_sequence[position] = back[position + 2][u][v]
-
-		decode_tags = [self.classes[label_id] for label_id in decode_sequence]
-
-		return decode_tags
 
 	def viterbi_decode_bigram(self, instance, verb_idx):
 		'''
@@ -242,8 +167,8 @@ class Perceptron(object):
 
 
 	def train(self, niter, dataset, validset):
-		for instance in dataset:
-			init_features_for_instance(instance)
+		# for instance in dataset:
+		# 	init_features_for_instance(instance)
 		for iter in range(niter):
 			print('Iteration %d:' % iter)
 			for instance in tqdm(dataset):
@@ -263,7 +188,7 @@ class Perceptron(object):
 		sentacc = 0.0
 		outf = open(filename, 'w')
 		for instance in dataset:
-			init_features_for_instance(instance)
+			# init_features_for_instance(instance)
 			length = instance['len']
 			verb_col = ['-'] * length
 			verbs = instance['verbs']
@@ -335,6 +260,10 @@ def loadmodel(filename, dev):
 if __name__ == '__main__':
 	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
 	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	with open('./data/dicts/word2id.json', 'r') as f:
+		word2id = json.load(f)
+	init_features_for_dset(trn, word2id)
+	init_features_for_dset(dev, word2id)
 	loadmodel('./model/model5.pkl', dev)
 	# model = Perceptron()
 	# cProfile.run('model.train(1, trn)')
