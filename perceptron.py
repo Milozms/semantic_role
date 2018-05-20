@@ -114,6 +114,14 @@ class Perceptron(object):
 			if self.classes[label_id][-1] == 'I':
 				lattice[position][label_id] = MINSCORE
 				continue
+			if position == verb_pos and label_id != vid:
+				lattice[position][label_id] = MINSCORE
+				back[position][label_id] = -1
+				continue
+			if position != verb_pos and label_id == vid:
+				lattice[position][label_id] = MINSCORE
+				back[position][label_id] = -1
+				continue
 			wvscore = np.dot(wordvec, self.weight_mat[label_id])
 			lattice[position][label_id] = self.feature_score(features, label_id) + wvscore
 
@@ -158,6 +166,9 @@ class Perceptron(object):
 		# Back track
 		for position in range(length - 2, -1, -1):
 			u = decode_sequence[position + 1]
+			if position == verb_pos and back[position + 1][u] != vid:
+				decode_sequence[position] = vid
+				continue
 			decode_sequence[position] = back[position + 1][u]
 
 		decode_tags = [self.classes[label_id] for label_id in decode_sequence]
@@ -324,9 +335,12 @@ if __name__ == '__main__':
 		word2id = json.load(f)
 	init_features_for_dset(trn, word2id)
 	init_features_for_dset(dev, word2id)
-	# loadmodel('./model/model5.pkl', dev)
-	# model = Perceptron()
+	# model = loadmodel('./model/model5.pkl')
+	model = Perceptron()
 	# cProfile.run('model.train(1, trn)')
-	# model.valid(dev, './data/0.txt')
-	# model.train(16, trn, dev)
-	average_model(dev)
+	# model.valid(dev, './output/valid51.txt')
+	model.train(8, trn, dev)
+	# average_model(dev)
+
+
+# eval: PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid1.prop
