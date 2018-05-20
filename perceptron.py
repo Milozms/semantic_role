@@ -49,30 +49,24 @@ class Perceptron(object):
 			return features
 		return features
 
-	def update_weights(self, golden, pred, features, word_id, lr = 1.0):
+	def update_weights(self, label, features, word_id, val = 1.0, lr = 1.0):
 		'''
 		Update the feature weights.
-		:param golden: golden class
-		:param pred: predicted class
+		:param label
 		:param features
+		:param val: +1.0 for positive, -1.0 for negative
 		:return:
 		'''
 		def upd_feat(c, f, v):
 			self.weights[f][c] += v
 
-		if golden == pred:
-			return
-		pred_id = self.label2id[pred]
-		gold_id = self.label2id[golden]
+		label_id = self.label2id[label]
 		for f in features:
 			self.weights.setdefault(f, defaultdict(float))
-			upd_feat(golden, f, lr)
-			upd_feat(pred, f, -lr)
+			upd_feat(label, f, lr*val)
 		wordvec = self.emb[word_id]
 		for idx in range(self.vecdim):
-			self.weight_mat[pred_id][idx] -= lr*wordvec[idx]
-			self.weight_mat[gold_id][idx] += lr*wordvec[idx]
-
+			self.weight_mat[label_id][idx] += val*lr*wordvec[idx]
 
 	def feature_score(self, features, label_id):
 		label = self.classes[label_id]
@@ -196,8 +190,13 @@ class Perceptron(object):
 				# word features, predicate_features, relative_features
 				features = get_static_features(instance, verb_idx, pos)
 				if pos >= 1:
-					features += get_tag_features(golden[pos - 1])
-				self.update_weights(golden[pos], pred[pos], features, word_idx[pos])
+					gold_features = features + get_tag_features(golden[pos - 1])
+					pred_features = features + get_tag_features(pred[pos - 1])
+				else:
+					gold_features = features
+					pred_features = features
+				self.update_weights(golden[pos], gold_features, word_idx[pos], val=1.0)
+				self.update_weights(pred[pos], pred_features, word_idx[pos], val=-1.0)
 
 
 	def train(self, niter, dataset, validset):
@@ -343,4 +342,4 @@ if __name__ == '__main__':
 	# average_model(dev)
 
 
-# eval: PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid1.prop
+# eval: PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid1.txt
