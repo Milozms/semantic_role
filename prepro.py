@@ -138,8 +138,8 @@ def readtest(textfile, propfile, outfile):
 		instance.pop('props')
 		dataset[idx] = instance
 
-	with open(outfile + '.json', 'w') as outf:
-		json.dump(dataset, outf)
+	# with open(outfile + '.json', 'w') as outf:
+	# 	json.dump(dataset, outf)
 	return dataset
 
 def build_word_list():
@@ -270,7 +270,6 @@ def get_predicate_features(instance, verb_idx):
 	words = ['<S>', '<S>'] + instance['words'] + ['<E>', '<E>']
 	pos = ['<S>', '<S>'] + instance['pos'] + ['<E>', '<E>']
 	length = instance['len']
-	tags = instance['tags'][verb_idx]
 	verb_postion, verb = instance['verbs'][verb_idx]
 	vpb = verb_postion + 2  # biased position
 	features = []

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from prepro import read, get_tag_features, init_features_for_dset, get_static_features
+from prepro import read, readtest, get_tag_features, init_features_for_dset, get_static_features
 import random
 import json
 import pickle
@@ -211,6 +211,28 @@ class Perceptron(object):
 			self.valid(validset, './output/valid%d.txt' % iter)
 			self.save('./model/model%d.pkl' % iter)
 
+	def test(self, dataset, filename):
+		outf = open(filename, 'w')
+		for instance in tqdm(dataset):
+			# init_features_for_instance(instance)
+			length = instance['len']
+			verb_col = ['-'] * length
+			verbs = instance['verbs']
+			for pos, verb in verbs:
+				verb_col[pos] = verb
+			out_tags = [verb_col]
+			for verb_idx in range(len(verbs)):
+				decode_tags = self.viterbi_decode_bigram(instance, verb_idx)
+				assert len(decode_tags) == length
+				out_tags.append(self.format_convert(decode_tags))
+			for row in range(length):
+				for col in range(len(verbs) + 1):
+					outf.write('%s\t' % out_tags[col][row])
+				outf.write('\n')
+			outf.write('\n')
+		outf.close()
+
+
 	def valid(self, dataset, filename):
 		wordcnt = 0.0
 		wordacc = 0.0
@@ -324,21 +346,25 @@ def average_model(dev):
 		model_iter = loadmodel('./model/model%d.pkl' % iter)
 		model.model_plus(model_iter)
 	model.model_div(8)
+	model.save('./model/average.pkl')
 	model.valid(dev, './output/aver.txt')
 
 
 if __name__ == '__main__':
-	trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
-	dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	# trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
+	# dev = readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	test = readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
 	with open('./data/dicts/word2id.json', 'r') as f:
 		word2id = json.load(f)
-	init_features_for_dset(trn, word2id)
-	init_features_for_dset(dev, word2id)
-	# model = loadmodel('./model/model5.pkl')
-	model = Perceptron()
+	# init_features_for_dset(trn, word2id)
+	# init_features_for_dset(dev, word2id)
+	init_features_for_dset(test, word2id)
+	model = loadmodel('./model/average.pkl')
+	# model = Perceptron()
 	# cProfile.run('model.train(1, trn)')
-	# model.valid(dev, './output/valid51.txt')
-	model.train(8, trn, dev)
+	# model.test(dev, './output/dev.txt')
+	model.test(test, './output/test.txt')
+	# model.train(8, trn, dev)
 	# average_model(dev)
 
 
