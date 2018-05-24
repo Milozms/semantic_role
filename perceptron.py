@@ -361,7 +361,6 @@ if __name__ == '__main__':
 	init_features_for_dset(test, word2id)
 	model = loadmodel('./model/average.pkl')
 	# model = Perceptron()
-	# cProfile.run('model.train(1, trn)')
 	# model.test(dev, './output/dev.txt')
 	model.test(test, './output/test.txt')
 	# model.train(8, trn, dev)
