@@ -344,13 +344,10 @@ def get_static_features(instance, verb_idx, position):
 	return instance['word_features'][position] + instance['pred_features'][verb_idx] \
 		   + get_relative_features(instance, verb_idx, position)
 
-def get_tag_features(prev1_tag, prev2_tag=None):
+def get_tag_features(prev1_tag):
 	features = []
 	fappend = features.append
 	fappend('T-1=' + prev1_tag)
-	if prev2_tag:
-		fappend('T-2=' + prev2_tag)
-		fappend('T-2,-1=' + prev2_tag + ',' + prev1_tag)
 	return features
 
 def get_all_classes(dataset):

@@ -37,16 +37,10 @@ class Perceptron(object):
 		# weight matrix for verb vectors
 		# self.verb_weight_mat = np.random.normal(loc=0, scale=1.0, size=[n_class, self.vecdim])
 
-	def get_tag_features_from_id(self, prev1_tag_id, prev2_tag_id=None, order=1):
+	def get_tag_features_from_id(self, prev1_tag_id):
 		features = []
 		prev1_tag = self.classes[prev1_tag_id]
-		if order == 1:
-			features.append('T-1=' + prev1_tag)
-		elif order == 2 and prev2_tag_id:
-			prev2_tag = self.classes[prev2_tag_id]
-			features.append('T-2=' + prev2_tag)
-			features.append('T-2,-1=' + prev2_tag + ',' + prev1_tag)
-			return features
+		features.append('T-1=' + prev1_tag)
 		return features
 
 	def update_weights(self, label, features, word_id, val = 1.0, lr = 1.0):
