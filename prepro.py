@@ -5,12 +5,11 @@ import pickle
 import nltk
 from tqdm import tqdm
 from parser import Parser, findpath
-from stanfordcorenlp import StanfordCoreNLP
-nlp = StanfordCoreNLP('/Users/zms/stanford-corenlp-full-2016-10-31', lang='zh')
+# from stanfordcorenlp import StanfordCoreNLP
+# nlp = StanfordCoreNLP('/Users/zms/stanford-corenlp-full-2016-10-31', lang='zh')
 # need sudo on MacOS
 
 def read(textfile, propfile, outfile):
-	# parser = Parser()
 	ftext = open(textfile, 'r')
 	fprop = open(propfile, 'r')
 	textlines = ftext.readlines()
@@ -79,7 +78,6 @@ def read(textfile, propfile, outfile):
 		instance['tags'] = tags
 		instance['verbs'] = verbs  # (verb_postion, verb)
 		instance['ner'] = get_ner(instance['words'])
-		# instance['tree'] = parser.parse(instance['words'])
 		instance.pop('props')
 		dataset[idx] = instance
 
@@ -97,7 +95,6 @@ def read(textfile, propfile, outfile):
 	return dataset
 
 def readtest(textfile, propfile, outfile):
-	# parser = Parser()
 	ftext = open(textfile, 'r')
 	fprop = open(propfile, 'r')
 	textlines = ftext.readlines()
@@ -145,7 +142,6 @@ def readtest(textfile, propfile, outfile):
 		assert verbcnt == len(verbs)
 		instance['verbs'] = verbs  # (verb_postion, verb)
 		instance['ner'] = get_ner(instance['words'])
-		# instance['tree'] = parser.parse(instance['words'])
 		instance.pop('props')
 		dataset[idx] = instance
 
@@ -405,10 +401,29 @@ def load_dset(file):
 		dset = json.load(f)
 		return dset
 
+def get_trees_for_dset():
+	parser = Parser()
+	files = ['trn', 'dev', 'test']
+	for file in files:
+		with open('./data/%s/%s.json' % (file, file), 'r') as f:
+			dset = json.load(f)
+			outfile = open('./data/%s/%s.tree' % (file, file), 'w')
+			# if file == 'trn':
+			# 	dset = dset[1462:]
+			for instance in tqdm(dset):
+				try:
+					tree = parser.parse(instance['words'])
+					outfile.write(tree._pformat_flat(nodesep='', parens='()', quotes=False))
+				except:
+					outfile.write('Parse Error')
+				outfile.write('\n')
+			outfile.close()
+
 if __name__ == '__main__':
-	readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
-	read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
-	readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
+	# readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	# read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
+	# readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
 	# classes = get_all_classes(dev + trn)
 	# build_word_list()
 	# build_word_dict_emb()
+	get_trees_for_dset()

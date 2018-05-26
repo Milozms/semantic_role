@@ -4,15 +4,20 @@ from nltk.parse.stanford import StanfordParser
 
 class Parser(object):
 	def __init__(self):
-		os.environ['STANFORD_PARSER_PATH'] = "/Users/zms/stanford-parser"
-		os.environ['STANFORD_PARSER'] = "/Users/zms/stanford-parser/stanford-parser.jar"
-		os.environ['STANFORD_MODELS'] = "/Users/zms/stanford-parser/stanford-parser-3.9.1-models.jar"
-		self.parser = StanfordParser(model_path='edu/stanford/nlp/models/lexparser/chinesePCFG.ser.gz')
+		try:
+			os.environ['STANFORD_PARSER_PATH'] = "/Users/zms/stanford-parser"
+			os.environ['STANFORD_PARSER'] = "/Users/zms/stanford-parser/stanford-parser.jar"
+			os.environ['STANFORD_MODELS'] = "/Users/zms/stanford-parser/stanford-parser-3.9.1-models.jar"
+			self.parser = StanfordParser(model_path='edu/stanford/nlp/models/lexparser/chinesePCFG.ser.gz', java_options='-mx4000m')
+		except:
+			os.environ['STANFORD_PARSER_PATH'] = "/home/zhangms/stanford-parser"
+			os.environ['STANFORD_PARSER'] = "/home/zhangms/stanford-parser/stanford-parser.jar"
+			os.environ['STANFORD_MODELS'] = "/home/zhangms/stanford-parser/stanford-parser-3.9.1-models.jar"
+			self.parser = StanfordParser(model_path='edu/stanford/nlp/models/lexparser/chinesePCFG.ser.gz', java_options='-mx4000m')
 
 	def parse(self, words):
 		tree = list(self.parser.parse(words))[0]
-		ptree = nltk.tree.ParentedTree.convert(tree)
-		return ptree
+		return tree
 
 def get_lca_length(location1, location2):
 	i = 0
