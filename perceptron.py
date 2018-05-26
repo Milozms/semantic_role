@@ -1,5 +1,5 @@
 from collections import defaultdict
-from prepro import read, readtest, get_tag_features, init_features_for_dset, get_static_features
+from prepro import load_dset, get_tag_features, init_features_for_dset, get_static_features
 import random
 import json
 import pickle
@@ -345,19 +345,21 @@ def average_model(dev):
 
 
 if __name__ == '__main__':
+	trn = load_dset('trn')
+	dev = load_dset('dev')
 	# trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
 	# dev = readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
-	test = readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
+	# test = readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
 	with open('./data/dicts/word2id.json', 'r') as f:
 		word2id = json.load(f)
-	# init_features_for_dset(trn, word2id)
-	# init_features_for_dset(dev, word2id)
-	init_features_for_dset(test, word2id)
-	model = loadmodel('./model/average.pkl')
-	# model = Perceptron()
+	init_features_for_dset(trn, word2id)
+	init_features_for_dset(dev, word2id)
+	# init_features_for_dset(test, word2id)
+	# model = loadmodel('./model/average.pkl')
+	model = Perceptron()
 	# model.test(dev, './output/dev.txt')
-	model.test(test, './output/test.txt')
-	# model.train(8, trn, dev)
+	# model.test(test, './output/test.txt')
+	model.train(16, trn, dev)
 	# average_model(dev)
 
 

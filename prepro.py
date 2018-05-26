@@ -2,9 +2,15 @@ import json
 import numpy as np
 import linecache
 import pickle
+import nltk
 from tqdm import tqdm
+from parser import Parser, findpath
+from stanfordcorenlp import StanfordCoreNLP
+nlp = StanfordCoreNLP('/Users/zms/stanford-corenlp-full-2016-10-31', lang='zh')
+# need sudo on MacOS
 
 def read(textfile, propfile, outfile):
+	# parser = Parser()
 	ftext = open(textfile, 'r')
 	fprop = open(propfile, 'r')
 	textlines = ftext.readlines()
@@ -43,7 +49,7 @@ def read(textfile, propfile, outfile):
 	'''
 	convert props format to IOB format
 	'''
-	for idx, instance in enumerate(dataset):
+	for idx, instance in enumerate(tqdm(dataset)):
 		verbcnt = len(instance['props'][0]) - 1
 		verbs = []
 		tags = [[] for i in range(verbcnt)]
@@ -72,6 +78,8 @@ def read(textfile, propfile, outfile):
 			tags[i] = newtags
 		instance['tags'] = tags
 		instance['verbs'] = verbs  # (verb_postion, verb)
+		instance['ner'] = get_ner(instance['words'])
+		# instance['tree'] = parser.parse(instance['words'])
 		instance.pop('props')
 		dataset[idx] = instance
 
@@ -84,11 +92,12 @@ def read(textfile, propfile, outfile):
 	# 			outf.write('\t'.join(tags) + '\n')
 	# 		outf.write('\n')
 
-	with open(outfile + '.json', 'w') as outf:
+	with open(outfile + '.ner.json', 'w') as outf:
 		json.dump(dataset, outf)
 	return dataset
 
 def readtest(textfile, propfile, outfile):
+	# parser = Parser()
 	ftext = open(textfile, 'r')
 	fprop = open(propfile, 'r')
 	textlines = ftext.readlines()
@@ -127,7 +136,7 @@ def readtest(textfile, propfile, outfile):
 	'''
 	convert props format to IOB format
 	'''
-	for idx, instance in enumerate(dataset):
+	for idx, instance in enumerate(tqdm(dataset)):
 		verbcnt = len(instance['props'][0]) - 1
 		verbs = []
 		for propidx, prop in enumerate(instance['props']):
@@ -135,12 +144,22 @@ def readtest(textfile, propfile, outfile):
 				verbs.append((propidx, prop[0]))  # (verb_postion, verb)
 		assert verbcnt == len(verbs)
 		instance['verbs'] = verbs  # (verb_postion, verb)
+		instance['ner'] = get_ner(instance['words'])
+		# instance['tree'] = parser.parse(instance['words'])
 		instance.pop('props')
 		dataset[idx] = instance
 
-	# with open(outfile + '.json', 'w') as outf:
-	# 	json.dump(dataset, outf)
+	with open(outfile + '.ner.json', 'w') as outf:
+		json.dump(dataset, outf)
 	return dataset
+
+def get_ner(words):
+	sentence = ' '.join(words)
+	word_with_ner = nlp.ner(sentence)
+	ner = [tag for word, tag in word_with_ner]
+
+	return ner
+
 
 def build_word_list():
 	test = readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
@@ -204,6 +223,8 @@ def get_word_features(instance, position):
 	assert position < instance['len']
 	words = ['<S>', '<S>'] + instance['words'] + ['<E>', '<E>']
 	pos = ['<S>', '<S>'] + instance['pos'] + ['<E>', '<E>']
+	ner = ['<S>', '<S>'] + instance['ner'] + ['<E>', '<E>']
+
 	pb = position + 2  # biased position
 	length = instance['len']
 	features = []
@@ -233,6 +254,18 @@ def get_word_features(instance, position):
 	fappend('P-2,-1,0=%s,%s,%s' % (pos[pb - 2], pos[pb - 1], pos[pb]))
 	fappend('P0,+1,+2=%s,%s,%s' % (pos[pb], pos[pb + 1], pos[pb + 2]))
 
+	# NER unigram, bigram, trigram
+	fappend('N0=%s' % ner[pb])
+	fappend('N-1=%s' % ner[pb - 1])
+	fappend('N-2=%s' % ner[pb - 2])
+	fappend('N+1=%s' % ner[pb + 1])
+	fappend('N+2=%s' % ner[pb + 2])
+	fappend('N-1,0=%s,%s' % (ner[pb - 1], ner[pb]))
+	fappend('N0,+1=%s,%s' % (ner[pb], ner[pb + 1]))
+	fappend('N-1,0,+1=%s,%s,%s' % (ner[pb - 1], ner[pb], ner[pb + 1]))
+	fappend('N-2,-1,0=%s,%s,%s' % (ner[pb - 2], ner[pb - 1], ner[pb]))
+	fappend('N0,+1,+2=%s,%s,%s' % (ner[pb], ner[pb + 1], ner[pb + 2]))
+
 	return features
 
 def get_relative_features(instance, verb_idx, position):
@@ -255,6 +288,11 @@ def get_relative_features(instance, verb_idx, position):
 	else:
 		fappend('After_Predicate')
 	fappend('Distance=%d' % (position - verb_postion))
+
+	# # path
+	# path = findpath(instance['tree'], position, verb_postion)
+	# path = ' '.join(path)
+	# fappend('Path=%s' % path)
 
 	return features
 
@@ -362,9 +400,15 @@ def get_all_classes(dataset):
 		json.dump(classes, f)
 	return classes
 
+def load_dset(file):
+	with open('./data/%s/%s.ner.json' % (file, file), 'r') as f:
+		dset = json.load(f)
+		return dset
+
 if __name__ == '__main__':
-	# dev = read('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
-	# trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
+	readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
+	readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
 	# classes = get_all_classes(dev + trn)
-	build_word_list()
-	build_word_dict_emb()
+	# build_word_list()
+	# build_word_dict_emb()
