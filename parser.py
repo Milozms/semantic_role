@@ -53,7 +53,7 @@ def findpath(ptree, pos1, pos2):
 	result = result[::-1]
 
 	# add path from lca to node2
-	result = result + get_labels_from_lca(ptree, lca_len, location2)
+	result = '/'.join(result) + '/' + '\\'.join(get_labels_from_lca(ptree, lca_len, location2))
 	return result
 
 

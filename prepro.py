@@ -285,10 +285,9 @@ def get_relative_features(instance, verb_idx, position):
 		fappend('After_Predicate')
 	fappend('Distance=%d' % (position - verb_postion))
 
-	# # path
-	# path = findpath(instance['tree'], position, verb_postion)
-	# path = ' '.join(path)
-	# fappend('Path=%s' % path)
+	# path
+	path = findpath(instance['tree'], position, verb_postion)
+	fappend('Path=%s' % path)
 
 	return features
 
@@ -418,6 +417,17 @@ def get_trees_for_dset():
 					outfile.write('Parse Error')
 				outfile.write('\n')
 			outfile.close()
+
+def read_trees_for_dset(file, dset):
+	with open('./data/%s/%s.tree' % (file, file), 'r') as f:
+		flines = f.readlines()
+		for idx, instance in enumerate(dset):
+			line = flines[idx]
+			ptree = nltk.tree.ParentedTree.fromstring(line)
+			instance['tree'] = ptree
+			dset[idx] = instance
+	return dset
+
 
 if __name__ == '__main__':
 	# readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')

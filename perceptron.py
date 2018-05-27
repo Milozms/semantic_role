@@ -1,5 +1,5 @@
 from collections import defaultdict
-from prepro import load_dset, get_tag_features, init_features_for_dset, get_static_features
+from prepro import load_dset, get_tag_features, init_features_for_dset, get_static_features, read_trees_for_dset
 import random
 import json
 import pickle
@@ -334,33 +334,38 @@ def loadmodel(filename):
 		model = pickle.load(f)
 		return model
 
-def average_model(dev):
-	model = loadmodel('./model/model0.pkl')
-	for iter in range(1, 16):
+def average_model(start, end, dev, test):
+	model = loadmodel('./model/model%d.pkl' % start)
+	for iter in range(start+1, end):
 		model_iter = loadmodel('./model/model%d.pkl' % iter)
 		model.model_plus(model_iter)
-	model.model_div(16)
+	model.model_div(end-start)
 	model.save('./model/average.pkl')
-	model.test(dev, './output/aver.txt')
+	model.test(dev, './output/average_dev.txt')
+	model.test(test, './output/average_test.txt')
 
 
 if __name__ == '__main__':
-	# trn = load_dset('trn')
+	trn = load_dset('trn')
 	dev = load_dset('dev')
+	test = load_dset('test')
 	# trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
 	# dev = readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
 	# test = readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
 	with open('./data/dicts/word2id.json', 'r') as f:
 		word2id = json.load(f)
-	# init_features_for_dset(trn, word2id)
+	init_features_for_dset(trn, word2id)
 	init_features_for_dset(dev, word2id)
-	# init_features_for_dset(test, word2id)
+	init_features_for_dset(test, word2id)
+	read_trees_for_dset('trn', trn)
+	read_trees_for_dset('dev', dev)
+	read_trees_for_dset('test', test)
 	# model = loadmodel('./model/average.pkl')
-	# model = Perceptron()
+	model = Perceptron()
 	# model.test(dev, './output/dev.txt')
-	# model.test(test, './output/test.txt')
-	# model.train(16, trn, dev)
-	average_model(dev)
+	# model.test(test, './output/average_test.txt')
+	model.train(16, trn, dev)
+	average_model(0, 16, dev, test)
 
 
 # eval: PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid1.txt
