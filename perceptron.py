@@ -349,9 +349,6 @@ if __name__ == '__main__':
 	trn = load_dset('trn')
 	dev = load_dset('dev')
 	test = load_dset('test')
-	# trn = read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
-	# dev = readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
-	# test = readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
 	with open('./data/dicts/word2id.json', 'r') as f:
 		word2id = json.load(f)
 	init_features_for_dset(trn, word2id)
