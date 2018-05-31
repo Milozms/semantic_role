@@ -1,0 +1,13 @@
+prepro.py: data preprocess
+perceptron.py: model
+parser.py: call Stanford Parser API
+
+running:
+python3 prepro.py
+python3 perceptron.py
+
+Note:
+1.Running the perceptron.py code requires all the preprocessed data, which is too large to upload;
+2.Running the preprocess.py code requires several hours (calling Stanford Parser).
+3.If you need to run the code, please contact me by zhangmaosen@pku.edu.cn (email) or 18810512898(message or wechat).
+4.You can also see the complete data at 172.31.222.83:/home/zhangms/semantic role (ICST LAN)

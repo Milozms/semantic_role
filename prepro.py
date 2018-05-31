@@ -430,10 +430,10 @@ def read_trees_for_dset(file, dset):
 
 
 if __name__ == '__main__':
-	# readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
-	# read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
-	# readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
-	# classes = get_all_classes(dev + trn)
-	# build_word_list()
-	# build_word_dict_emb()
+	read('./data/trn/trn.text', './data/trn/trn.props', './data/trn/trn')
+	readtest('./data/dev/dev.text', './data/dev/dev.props', './data/dev/dev')
+	readtest('./data/test/test.text', './data/test/test.prop.noanswer', './data/test/test')
+	classes = get_all_classes(dev + trn)
+	build_word_list()
+	build_word_dict_emb()
 	get_trees_for_dset()
