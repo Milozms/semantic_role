@@ -1,0 +1,170 @@
+%
+% File acl2018.tex
+%
+%% Based on the style files for ACL-2017, with some changes, which were, in turn,
+%% Based on the style files for ACL-2015, with some improvements
+%%  taken from the NAACL-2016 style
+%% Based on the style files for ACL-2014, which were, in turn,
+%% based on ACL-2013, ACL-2012, ACL-2011, ACL-2010, ACL-IJCNLP-2009,
+%% EACL-2009, IJCNLP-2008...
+%% Based on the style files for EACL 2006 by 
+%%e.agirre@ehu.es or Sergi.Balari@uab.es
+%% and that of ACL 08 by Joakim Nivre and Noah Smith
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[hyperref]{acl2018}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{url}
+
+\aclfinalcopy % Uncomment this line for the final submission
+%\def\aclpaperid{***} %  Enter the acl Paper ID here
+
+%\setlength\titlebox{5cm}
+% You can expand the titlebox if you need extra space
+% to show all the authors. Please do not make the titlebox
+% smaller than 5cm (the original size); we will check this
+% in the camera-ready version and ask you to change it back.
+
+\newcommand\BibTeX{B{\sc ib}\TeX}
+
+\title{Semantic Role Labeling with Structured Perceptron}
+
+\author{Maosen Zhang \\
+  School of EECS, Peking University \\
+  {\tt zhangmaosen@pku.edu.cn} \\}
+
+\date{}
+\begin{document}
+\maketitle
+\begin{abstract}
+  We develop a semantic role labeling system with structured perceptron. \cite{collins2002discriminative}
+  We use Viterbi algorithm in decoding for performance. The core part of 
+  our program is written by myself and only some trivial functions are 
+  from externel libraries. We achieve 70.83 F1 score on development set.
+\end{abstract}
+
+\section{Data Preprocess}
+First of all, bracketed representation of roles is converted into IOB2 representation.
+For example, the beginning word of role A0 is tagged "A0-B"; 
+the following wordw of role A0 are tagged "A0-I"; words not in a role are tagged "O".
+
+Moreover, Although the POS tags are provided in the dataset, we still need other 
+information. We use Stanford Parser and Stanford CoreNLP packet to 
+generate Named Entity Recognition (NER) labels and parsing trees for 
+the sentences in the dataset.
+
+\section{Structured Perceptron}
+We use structured perceptron as the sequence labeling model for the task.\cite{collins2002discriminative}
+$$
+score_y = \sum_i \lambda_{f_i(x,y)} f_i(x, y)
+$$
+
+\subsection{Features}
+The features we use in the perceptron are following. In order to improve efficiency,
+we divide those features into four groups: word features, verb features, 
+relative features, tag features.
+
+Word features are features concerning the current word:
+\begin{itemize}
+  \item Word unigram, bigram, trigram: $w_i$, $w_{i-1}w_i$, $w_i w_{i+1}$, 
+  $w_{i-1}w_i w_{i+1}$, $w_{i-2}w_{i-1}w_i$, $w_i w_{i+1}w_{i+2}$;
+  \item POS tag unigram, bigram, trigram;
+  \item NER tag unigram, bigram, trigram;
+\end{itemize}
+Verb features are features concerning the given verb:
+\begin{itemize}
+  \item Verb context: word and POS tag unigram, bigram, trigram around the verb;
+  \item Sentence length;
+\end{itemize}
+Relative features are features concerning both the current word and the given verb:
+\begin{itemize}
+  \item The postion of current word relative to the verb (before, is, after);\cite{hacioglu2004semantic}
+  \item The distance between current word and verb (minus means before);
+  \item The path between the current word and the verb in the parsing tree\cite{xue2004calibrating};
+\end{itemize}
+Tag features (actually the transition score between the previous tag and the current tag):
+\begin{itemize}
+  \item The semantic role label of previous word.
+\end{itemize}
+
+\subsubsection{Collecting Features for instances}
+In order to improve efficiency, we collect different features in different stages.
+We initialize the dataset with their word features and verb features before training
+and store them, so that we can save the time for collecting them during training time. 
+While the relative features and tag features are collected during training and decoding time.
+Note that the tag features are collected dynamically depending the viterbi process during decoding.
+We design different functions for getting those features.
+
+Because the word, verb and relative features are static during viterbi process, which are 
+independent of previous decode label, we call them "static features" and we design a function 
+for collecting them together.
+
+\subsubsection{Feature Representation}
+Since the feature vectors are sparse, we use hash table (dict in Python) to store weights for given 
+feature template and label. For example, weights['W=apple']['A0-B'] indicates the weight for feature 
+"current word is apple and tag is A0-B". We store features in a list and retrieve weights for them and 
+compute the score.
+
+\subsection{Viterbi Decode}
+Given a sentence with its features and weights, we use viterbi algorithm to decode the 
+tag sequence.
+\begin{equation}
+\pi(j,u,v)=\\
+max_{<t_1, ..., t_{j-2}>}score(t_1, ..., t_{j-2}, u, v)
+\end{equation}
+We use dynamic programming to compute the lattice $\pi$:
+\begin{equation}
+\pi(j,u,v)=max_t(\pi(j-1,t,u)+score(j,t,u,v))
+\end{equation}
+
+\subsection{Training}
+For each instance of training dataset, we first use viterbi algorithm to decode the tag sequence 
+with current weights. Then we compare the decoded sequence with the golden sequence and update 
+the weights according to the difference between the two sequences. More specificly, let the 
+golden tag sequence be $y_1, y_2, ..., y_n$ and the decoded predicted tag sequence be 
+$z_1, z_2, ..., z_n$. If $y_k \neq z_k$, we will increase the weights for the features of $g_k$ 
+and the transition score of $y_{k-1}$ and $y_k$, and decrease the weights for the features of 
+$p_k$ and the transition score of $z_{k-1}$ and $z_k$. (This is extreamly important according to
+experiment!)
+
+Let $Z$ be decoded sequence:
+$$Z=argmax_{t[1:n]\in GEN(w[1:n])} \lambda\cdot f(w[1:n],t[1:n]) $$ 
+If $Z_k \neq Y_k$, update:
+$$\lambda^* = \lambda + f(X_k, Y_k) - f(X_k, Z_k)$$
+
+\subsection{Averaged Perceptron}
+According to Collins \cite{collins2002discriminative}, we compute the 
+averaged model parameters of models after training several iterations,
+and use these parameters to inference the input data. It significantly 
+improved the performance.
+
+\section{Experiment}
+
+On development dataset, We got results as Tabel 1 shows.
+\begin{table}[t!]
+  \begin{center}
+  \begin{tabular}{|l|l|l|l|}
+  \hline  \bf Precision & \bf Recall & \bf F1 \\ \hline
+  \bf Overall  &  73.67 &  68.19 &  \bf 70.83 \\
+          A0   &  66.78 &  61.15 &  63.84 \\
+          A1   &  74.49 &  74.06 &  74.28 \\
+          A2   &  59.20 &  47.25 &  52.55 \\
+          A3   &  54.55 &  40.00 & 46.15 \\
+          A4   &  100.00 &  22.22 &  36.36 \\
+          AM   &  80.17 &  70.85 &  75.22 \\
+           Perfect props &  41.57 & - & - \\
+  \hline
+  \end{tabular}
+  \end{center}
+  \caption{\label{font-table} Font guide. }
+  \end{table}
+
+
+% include your own bib file like this:
+%\bibliographystyle{acl}
+%\bibliography{acl2018}
+\bibliography{acl2018}
+\bibliographystyle{acl_natbib}
+
+\end{document}

@@ -1,0 +1,172 @@
+zhangms@icstpie:~/semantic role$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid0.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  20.16
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     2648    2933    2260    47.45   53.95   50.49
+----------
+        A0      631     692     661    47.69   48.84   48.26
+        A1      855     623     876    57.85   49.39   53.29
+        A2       84     844     134     9.05   38.53   14.66
+        A3        0       1      15     0.00    0.00    0.00
+        A4        0       2       9     0.00    0.00    0.00
+        AM     1078     771     565    58.30   65.61   61.74
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+
+zhangms@icstpie:~/semantic role$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid1.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  29.75
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     2912    1699    1996    63.15   59.33   61.18
+----------
+        A0      631     447     661    58.53   48.84   53.25
+        A1     1112     651     619    63.07   64.24   63.65
+        A2       76     182     142    29.46   34.86   31.93
+        A3        2       9      13    18.18   13.33   15.38
+        A4        0       0       9     0.00    0.00    0.00
+        AM     1091     410     552    72.68   66.40   69.40
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+
+zhangms@icstpie:~/semantic role$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid2.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  31.59
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     2886    1617    2022    64.09   58.80   61.33
+----------
+        A0      716     683     576    51.18   55.42   53.21
+        A1     1074     490     657    68.67   62.05   65.19
+        A2       72     142     146    33.64   33.03   33.33
+        A3        4       9      11    30.77   26.67   28.57
+        A4        2       2       7    50.00   22.22   30.77
+        AM     1018     291     625    77.77   61.96   68.97
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+
+
+zhangms@icstpie:~/semantic role$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid3.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  33.38
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3049    1490    1859    67.17   62.12   64.55
+----------
+        A0      699     496     593    58.49   54.10   56.21
+        A1     1150     498     581    69.78   66.44   68.07
+        A2      105     203     113    34.09   48.17   39.92
+        A3        4       5      11    44.44   26.67   33.33
+        A4        3       1       6    75.00   33.33   46.15
+        AM     1088     287     555    79.13   66.22   72.10
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+
+zhangms@icstpie:~/semantic role$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid4.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  33.24
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     2765    1023    2143    72.99   56.34   63.59
+----------
+        A0      557     262     735    68.01   43.11   52.77
+        A1     1127     452     604    71.37   65.11   68.10
+        A2       69      56     149    55.20   31.65   40.23
+        A3        7      13       8    35.00   46.67   40.00
+        A4        3       1       6    75.00   33.33   46.15
+        AM     1002     239     641    80.74   60.99   69.49
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+
+zhangms@icstpie:~/semantic role$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid5.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  36.72
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3004    1160    1904    72.14   61.21   66.23
+----------
+        A0      650     308     642    67.85   50.31   57.78
+        A1     1243     514     488    70.75   71.81   71.27
+        A2       76      60     142    55.88   34.86   42.94
+        A3        2       3      13    40.00   13.33   20.00
+        A4        0       0       9     0.00    0.00    0.00
+        AM     1033     275     610    78.98   62.87   70.01
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+
+zhangms@icstpie:~/semantic role$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid6.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  34.06
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     2944    1177    1964    71.44   59.98   65.21
+----------
+        A0      606     264     686    69.66   46.90   56.06
+        A1     1105     444     626    71.34   63.84   67.38
+        A2      101     135     117    42.80   46.33   44.49
+        A3        4       7      11    36.36   26.67   30.77
+        A4        2       0       7   100.00   22.22   36.36
+        AM     1126     327     517    77.49   68.53   72.74
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+
+zhangms@icstpie:~/semantic role$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid7.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  35.80
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     2801     958    2107    74.51   57.07   64.64
+----------
+        A0      606     274     686    68.86   46.90   55.80
+        A1     1204     460     527    72.36   69.56   70.93
+        A2       49      19     169    72.06   22.48   34.27
+        A3        2       4      13    33.33   13.33   19.05
+        A4        0       1       9     0.00    0.00    0.00
+        AM      940     200     703    82.46   57.21   67.55
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+
+
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/average_dev.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  41.57
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3347    1196    1561    73.67   68.19   70.83
+----------
+        A0      790     393     502    66.78   61.15   63.84
+        A1     1282     439     449    74.49   74.06   74.28
+        A2      103      71     115    59.20   47.25   52.55
+        A3        6       5       9    54.55   40.00   46.15
+        A4        2       0       7   100.00   22.22   36.36
+        AM     1164     288     479    80.17   70.85   75.22
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
