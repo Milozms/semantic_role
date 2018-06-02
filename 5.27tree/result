@@ -151,6 +151,153 @@ Percentage of perfect props :  35.80
          V     2064       0       0   100.00  100.00  100.00
 ------------------------------------------------------------
 
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/valid8.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  38.61
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3247    1350    1661    70.63   66.16   68.32
+----------
+        A0      765     516     527    59.72   59.21   59.46
+        A1     1234     421     497    74.56   71.29   72.89
+        A2      103      83     115    55.38   47.25   50.99
+        A3        7       8       8    46.67   46.67   46.67
+        A4        5       2       4    71.43   55.56   62.50
+        AM     1133     320     510    77.98   68.96   73.19
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/valid9.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  36.87
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3252    1453    1656    69.12   66.26   67.66
+----------
+        A0      744     437     548    63.00   57.59   60.17
+        A1     1290     579     441    69.02   74.52   71.67
+        A2       51      28     167    64.56   23.39   34.34
+        A3        6       6       9    50.00   40.00   44.44
+        A4        2       1       7    66.67   22.22   33.33
+        AM     1159     402     484    74.25   70.54   72.35
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/valid10.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  32.51
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3490    2421    1418    59.04   71.11   64.52
+----------
+        A0      800     660     492    54.79   61.92   58.14
+        A1     1270     639     461    66.53   73.37   69.78
+        A2      119     236      99    33.52   54.59   41.54
+        A3        4       5      11    44.44   26.67   33.33
+        A4        4       0       5   100.00   44.44   61.54
+        AM     1293     881     350    59.48   78.70   67.75
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/valid11.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  37.89
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     2996    1039    1912    74.25   61.04   67.00
+----------
+        A0      716     397     576    64.33   55.42   59.54
+        A1     1156     351     575    76.71   66.78   71.40
+        A2      113     110     105    50.67   51.83   51.25
+        A3        8       5       7    61.54   53.33   57.14
+        A4        2       0       7   100.00   22.22   36.36
+        AM     1001     176     642    85.05   60.93   70.99
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/valid12.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  37.79
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3298    1524    1610    68.39   67.20   67.79
+----------
+        A0      707     420     585    62.73   54.72   58.45
+        A1     1319     634     412    67.54   76.20   71.61
+        A2       73      49     145    59.84   33.49   42.94
+        A3        4       3      11    57.14   26.67   36.36
+        A4        2       0       7   100.00   22.22   36.36
+        AM     1193     418     450    74.05   72.61   73.33
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/valid13.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  36.53
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3492    1867    1416    65.16   71.15   68.02
+----------
+        A0      894     894     398    50.00   69.20   58.05
+        A1     1281     498     450    72.01   74.00   72.99
+        A2      104     100     114    50.98   47.71   49.29
+        A3        8       9       7    47.06   53.33   50.00
+        A4        2       0       7   100.00   22.22   36.36
+        AM     1203     366     440    76.67   73.22   74.91
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/valid14.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  32.22
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3515    2363    1393    59.80   71.62   65.18
+----------
+        A0      857     869     435    49.65   66.33   56.79
+        A1     1272     622     459    67.16   73.48   70.18
+        A2      115     154     103    42.75   52.75   47.23
+        A3        5       5      10    50.00   33.33   40.00
+        A4        1       0       8   100.00   11.11   20.00
+        AM     1265     713     378    63.95   76.99   69.87
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/valid15.txt
+Number of Sentences    :         561
+Number of Propositions :        2064
+Percentage of perfect props :  37.98
+
+              corr.  excess  missed    prec.    rec.      F1
+------------------------------------------------------------
+   Overall     3418    1686    1490    66.97   69.64   68.28
+----------
+        A0      799     538     493    59.76   61.84   60.78
+        A1     1267     478     464    72.61   73.19   72.90
+        A2       96      70     122    57.83   44.04   50.00
+        A3        2       1      13    66.67   13.33   22.22
+        A4        1       0       8   100.00   11.11   20.00
+        AM     1253     599     390    67.66   76.26   71.70
+------------------------------------------------------------
+         V     2064       0       0   100.00  100.00  100.00
+------------------------------------------------------------
+zmsdeMacBook-Pro:semantic role zms$
+
+
 
 zmsdeMacBook-Pro:semantic role zms$ PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./5.27tree/average_dev.txt
 Number of Sentences    :         561

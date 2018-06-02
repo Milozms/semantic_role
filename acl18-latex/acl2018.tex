@@ -41,7 +41,7 @@
   We develop a semantic role labeling system with structured perceptron. \cite{collins2002discriminative}
   We use Viterbi algorithm in decoding for performance. The core part of 
   our program is written by myself and only some trivial functions are 
-  from externel libraries. We achieve 70.83 F1 score on development set.
+  from externel libraries. We achieve 73.27 F1 score on development set.
 \end{abstract}
 
 \section{Data Preprocess}
@@ -71,6 +71,8 @@ Word features are features concerning the current word:
   $w_{i-1}w_i w_{i+1}$, $w_{i-2}w_{i-1}w_i$, $w_i w_{i+1}w_{i+2}$;
   \item POS tag unigram, bigram, trigram;
   \item NER tag unigram, bigram, trigram;
+  \item Category of parent node in the parsing tree;
+  \item Whether neighbor words are in the same constituent in the parsing tree;
 \end{itemize}
 Verb features are features concerning the given verb:
 \begin{itemize}
@@ -82,6 +84,7 @@ Relative features are features concerning both the current word and the given ve
   \item The postion of current word relative to the verb (before, is, after);\cite{hacioglu2004semantic}
   \item The distance between current word and verb (minus means before);
   \item The path between the current word and the verb in the parsing tree\cite{xue2004calibrating};
+  \item The partial path from current word and the verb to the lowest common ancestor\cite{sun:2010:Short2};
 \end{itemize}
 Tag features (actually the transition score between the previous tag and the current tag):
 \begin{itemize}
@@ -145,19 +148,19 @@ On development dataset, We got results as Tabel 1 shows.
 \begin{table}[t!]
   \begin{center}
   \begin{tabular}{|l|l|l|l|}
-  \hline  \bf Precision & \bf Recall & \bf F1 \\ \hline
-  \bf Overall  &  73.67 &  68.19 &  \bf 70.83 \\
-          A0   &  66.78 &  61.15 &  63.84 \\
-          A1   &  74.49 &  74.06 &  74.28 \\
-          A2   &  59.20 &  47.25 &  52.55 \\
-          A3   &  54.55 &  40.00 & 46.15 \\
-          A4   &  100.00 &  22.22 &  36.36 \\
-          AM   &  80.17 &  70.85 &  75.22 \\
-           Perfect props &  41.57 & - & - \\
+  \hline & \bf Precision & \bf Recall & \bf F1 \\ \hline
+  \bf Overall  &  74.80 &  71.80 &  \bf 73.27 \\
+          A0   &   67.30 &  65.63 &  66.46 \\
+          A1   &   76.79 &  77.24 &  77.02 \\
+          A2   &   65.61 &  47.25 &  54.93 \\
+          A3   &   60.00 &  40.00 &  48.00 \\
+          A4   &   100.00 &  33.33 &  50.00 \\
+          AM   &   79.68 &  74.68 &  77.10 \\
+           Perfect props &  46.41 & - & - \\
   \hline
   \end{tabular}
   \end{center}
-  \caption{\label{font-table} Font guide. }
+  \caption{\label{result} Result. }
   \end{table}
 
 
