@@ -31,6 +31,14 @@ def get_labels_from_lca(ptree, lca_len, location):
 		labels.append(ptree[location[:i]].label())
 	return labels
 
+def is_in_the_same_constituent(loc1, loc2):
+	if len(loc1) != len(loc2):
+		return 0
+	lca_len = get_lca_length(loc1, loc2)
+	if lca_len >= len(loc1) - 2:
+		return 1
+	return 0
+
 def findpath(ptree, pos1, pos2):
 	'''
 	Find path in parented tree from pos1 to pos2
@@ -46,15 +54,20 @@ def findpath(ptree, pos1, pos2):
 	lca_len = get_lca_length(location1, location2)
 
 	# find path from the node1 to lca
-	labels1 = get_labels_from_lca(ptree, lca_len, location1)
+	leftpath = get_labels_from_lca(ptree, lca_len, location1)
 	# ignore the first element, because it will be counted in the second part of the path
-	result = labels1[1:]
+	leftpath_ = leftpath[1:]
 	# inverse, because we want to go from the node to least common ancestor
-	result = result[::-1]
+	leftpath_ = leftpath_[::-1]
+
+	rightpath = get_labels_from_lca(ptree, lca_len, location2)
 
 	# add path from lca to node2
-	result = '/'.join(result) + '/' + '\\'.join(get_labels_from_lca(ptree, lca_len, location2))
-	return result
+	path = '/'.join(leftpath_) + '/' + '\\'.join(rightpath)
+
+	leftpath = '/'.join(leftpath)
+	rightpath = '\\'.join(rightpath)
+	return path, leftpath, rightpath
 
 
 if __name__ == '__main__':

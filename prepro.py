@@ -4,7 +4,7 @@ import linecache
 import pickle
 import nltk
 from tqdm import tqdm
-from parser import Parser, findpath
+from parser import Parser, findpath, is_in_the_same_constituent
 # from stanfordcorenlp import StanfordCoreNLP
 # nlp = StanfordCoreNLP('/Users/zms/stanford-corenlp-full-2016-10-31', lang='zh')
 # need sudo on MacOS
@@ -262,6 +262,33 @@ def get_word_features(instance, position):
 	fappend('N-2,-1,0=%s,%s,%s' % (ner[pb - 2], ner[pb - 1], ner[pb]))
 	fappend('N0,+1,+2=%s,%s,%s' % (ner[pb], ner[pb + 1], ner[pb + 2]))
 
+
+	ptree = instance['tree']
+	loc = ptree.leaf_treeposition(position)
+
+	# Parent category
+	if len(loc) >= 1:
+		parent = ptree[loc[:-1]]
+		fappend('PCat=%s' % parent.label())
+	# Grandparent Category
+	if len(loc) >= 2:
+		gparent = ptree[loc[:-2]]
+		fappend('GPCat=%s' % gparent.label())
+
+	# Neighbor word are in the same constituent
+	if position >= 1:
+		loc_l1 = ptree.leaf_treeposition(position - 1)
+		fappend('L1ISC=%d' % is_in_the_same_constituent(loc, loc_l1))
+	if position >= 2:
+		loc_l2 = ptree.leaf_treeposition(position - 2)
+		fappend('L2ISC=%d' % is_in_the_same_constituent(loc, loc_l2))
+	if position + 1 < length:
+		loc_r1 = ptree.leaf_treeposition(position + 1)
+		fappend('R1ISC=%d' % is_in_the_same_constituent(loc, loc_r1))
+	if position + 2 < length:
+		loc_r2 = ptree.leaf_treeposition(position + 2)
+		fappend('R2ISC=%d' % is_in_the_same_constituent(loc, loc_r2))
+
 	return features
 
 def get_relative_features(instance, verb_idx, position):
@@ -285,9 +312,11 @@ def get_relative_features(instance, verb_idx, position):
 		fappend('After_Predicate')
 	fappend('Distance=%d' % (position - verb_postion))
 
-	# path
-	path = findpath(instance['tree'], position, verb_postion)
+	# path and partial path
+	path, lpath, rpath = findpath(instance['tree'], position, verb_postion)
 	fappend('Path=%s' % path)
+	fappend('lPath=%s' % lpath)
+	fappend('rPath=%s' % rpath)
 
 	return features
 
