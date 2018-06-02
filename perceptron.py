@@ -193,10 +193,10 @@ class Perceptron(object):
 				self.update_weights(pred[pos], pred_features, word_idx[pos], val=-1.0)
 
 
-	def train(self, niter, dataset, validset):
+	def train(self, siter, niter, dataset, validset):
 		# for instance in dataset:
 		# 	init_features_for_instance(instance)
-		for iter in range(niter):
+		for iter in range(siter, niter):
 			print('Iteration %d:' % iter)
 			for instance in tqdm(dataset):
 				for verb_idx in range(len(instance['verbs'])):
@@ -340,9 +340,9 @@ def average_model(start, end, dev, test):
 		model_iter = loadmodel('./model/model%d.pkl' % iter)
 		model.model_plus(model_iter)
 	model.model_div(end-start)
-	model.save('./model/average.pkl')
-	model.test(dev, './output/average_dev.txt')
-	model.test(test, './output/average_test.txt')
+	model.save('./model/average%d-%d.pkl' % (start, end))
+	model.test(dev, './output/average%d-%d_dev.txt' % (start, end))
+	model.test(test, './output/average%d-%d_test.txt'% (start, end))
 
 
 if __name__ == '__main__':
@@ -357,12 +357,12 @@ if __name__ == '__main__':
 	init_features_for_dset(trn, word2id)
 	init_features_for_dset(dev, word2id)
 	init_features_for_dset(test, word2id)
-	# model = loadmodel('./model/average.pkl')
+	# model = loadmodel('./model/model4.pkl')
 	model = Perceptron()
 	# model.test(dev, './output/dev.txt')
 	# model.test(test, './output/average_test.txt')
-	model.train(16, trn, dev)
-	average_model(0, 16, dev, test)
+	model.train(0, 32, trn, dev)
+	average_model(0, 32, dev, test)
 
 
 # eval: PERL5LIB=./srlconll-1.1/lib/ perl ./srlconll-1.1/bin/srl-eval.pl ./data/dev/dev.props ./output/valid1.txt
