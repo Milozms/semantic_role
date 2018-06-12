@@ -361,7 +361,7 @@ if __name__ == '__main__':
 	model = Perceptron()
 	# model.test(dev, './output/dev.txt')
 	# model.test(test, './output/average_test.txt')
-	model.train(0, 32, trn, dev)
+	model.train(0 , 32, trn, dev)
 	average_model(0, 32, dev, test)
 
 
